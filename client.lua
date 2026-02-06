@@ -33,12 +33,12 @@ end
 local function updateUI()
     local ped = PlayerPedId()
     if GetSelectedPedWeapon(ped) ~= Config.TaserWeapon then
-        lib.hideTextUI()
+        lib.hideTextUI('smart_taser_ui')
         return
     end
 
     if not IsPlayerFreeAiming(PlayerId()) then
-        lib.hideTextUI()
+        lib.hideTextUI('smart_taser_ui')
         return
     end
 
@@ -48,13 +48,13 @@ local function updateUI()
     local isOnCooldown = cooldownRemaining > 0
 
     -- Build main UI text
-    local mainText = string.format("Taser Charges\n%s", getCartridgeIcons(taserCartridges, Config.MaxCartridges))
+    local mainText = string.format("Taser Charges\\n%s", getCartridgeIcons(taserCartridges, Config.MaxCartridges))
     
     -- Add cooldown indicator if active
     if isOnCooldown then
-        mainText = mainText .. string.format("\n🔄 Cooldown: %s", formatTime(cooldownRemaining))
+        mainText = mainText .. string.format("\\n🤒 Cooldown: %s", formatTime(cooldownRemaining))
     elseif taserCartridges == 0 then
-        mainText = mainText .. "\n⚠️ RELOAD REQUIRED"
+        mainText = mainText .. "\\n⚠️ RELOAD REQUIRED"
     end
 
     -- Show main UI
@@ -62,7 +62,7 @@ local function updateUI()
         position = Config.UI.position,
         icon = "bolt",
         style = Config.UI.style
-    })
+    }, 'smart_taser_ui')
 end
 
 -- Hide weapon HUD when taser is equipped
@@ -150,7 +150,7 @@ CreateThread(function()
                     -- Still on cooldown
                     lib.notify({ 
                         title = "⚡ Smart Taser", 
-                        description = string.format("🔄 Cooldown active! %s remaining", formatTime(cooldownRemaining)), 
+                        description = string.format("🤒 Cooldown active! %s remaining", formatTime(cooldownRemaining)), 
                         type = "warning", 
                         duration = 2000 
                     })
@@ -186,7 +186,7 @@ AddEventHandler('smarttaser:reloadTaser', function()
     isReloading = true
     
     -- Hide UI during reload to prevent conflicts
-    lib.hideTextUI()
+    lib.hideTextUI('smart_taser_ui')
 
     -- Request the animation dict from config
     RequestAnimDict(Config.ReloadAnimation.dict)
