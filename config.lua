@@ -22,34 +22,38 @@ Config.ReloadAnimation = {
 
 -- UI Configuration
 Config.UI = {
-    -- Main UI positioning
+    -- Main UI positioning (options: "center", "right-center", "left-center", "top-center", "top-right", "top-left", "bottom-center", "bottom-right", "bottom-left")
     position = "right-center",
     
-    -- Style configuration
+    -- Style configuration - uses native colors (RGBA values)
     style = {
-        backgroundColor = "#1a1a2e",
+        -- Background color (hex or rgba format)
+        -- Examples: "#1a1a2e" or "rgba(26, 26, 46, 230)" or "rgba(0, 0, 0, 200)"
+        backgroundColor = "rgba(20, 20, 35, 240)",
+        
+        -- Text/accent color (hex format)
+        -- Examples: "#00d4ff" (cyan), "#ff6b6b" (red), "#4caf50" (green), "#ffd700" (gold)
         color = "#00d4ff",
-        fontSize = "16px",
-        padding = "10px 16px",
-        borderRadius = "12px",
-        fontFamily = "Segoe UI, Roboto, Helvetica, Arial, sans-serif",
-        boxShadow = "0 4px 12px rgba(0, 212, 255, 0.3)",
-        border = "2px solid rgba(0, 212, 255, 0.5)"
+        
+        -- Border color (hex or rgba format)
+        border = "rgba(0, 212, 255, 180)"
     },
     
     -- Cooldown bar configuration
     cooldownBar = {
         enabled = true,
-        height = "4px",
-        backgroundColor = "rgba(0, 0, 0, 0.5)",
+        -- Background color of the progress bar track
+        backgroundColor = "rgba(0, 0, 0, 150)",
+        -- Foreground color when cooldown is active
         foregroundColor = "#ff6b6b",
-        borderRadius = "2px"
+        -- Color when ready to fire (green)
+        readyColor = "#4caf50"
     },
     
     -- Cartridge icons configuration
     icons = {
         enabled = true,
-        filled = "🔋",
-        empty = "⬛"
+        filled = "🔋",  -- Emoji for full cartridges
+        empty = "⬛"   -- Emoji for empty cartridges
     }
 }
