@@ -1,10 +1,11 @@
 -- Enhanced Smart Taser System
--- Features: Fixed cooldowns, professional UI, configurable animations
+-- Features: Fixed cooldowns, native UI (no ox_lib conflicts), configurable animations
 
 local taserCartridges = Config.MaxCartridges
 local lastTase = 0
 local isReloading = false
 local cooldownEndTime = 0
+local showUI = false
 
 -- Format time for display
 local function formatTime(ms)
@@ -29,40 +30,92 @@ local function getCartridgeIcons(count, max)
     return icons
 end
 
--- Update UI with enhanced styling and cooldown bar
-local function updateUI()
-    local ped = PlayerPedId()
-    if GetSelectedPedWeapon(ped) ~= Config.TaserWeapon then
-        lib.hideTextUI()
-        return
-    end
+-- Draw text using native FiveM functions
+local function drawText(text, x, y, scale, r, g, b, a)
+    SetTextFont(4)
+    SetTextScale(scale, scale)
+    SetTextColour(r, g, b, a)
+    SetTextCentre(true)
+    SetTextDropshadow(0, 0, 0, 0, 255)
+    SetTextEdge(1, 0, 0, 0, 255)
+    SetTextDropShadow()
+    SetTextOutline()
+    SetTextEntry("STRING")
+    AddTextComponentString(text)
+    DrawText(x, y)
+end
 
-    if not IsPlayerFreeAiming(PlayerId()) then
-        lib.hideTextUI()
-        return
-    end
-
+-- Draw the taser UI using native functions
+local function drawTaserUI()
+    if not showUI then return end
+    
     -- Calculate cooldown status
     local currentTime = GetGameTimer()
     local cooldownRemaining = math.max(0, cooldownEndTime - currentTime)
     local isOnCooldown = cooldownRemaining > 0
-
-    -- Build main UI text
-    local mainText = string.format("Taser Charges\n%s", getCartridgeIcons(taserCartridges, Config.MaxCartridges))
     
-    -- Add cooldown indicator if active
+    -- Calculate screen position based on Config.UI.position
+    local xPos = 0.5
+    local yPos = 0.5
+    local yOffset = 0.0
+    
+    if Config.UI.position == "right-center" then
+        xPos = 0.85
+        yPos = 0.5
+    elseif Config.UI.position == "left-center" then
+        xPos = 0.15
+        yPos = 0.5
+    elseif Config.UI.position == "top-center" then
+        xPos = 0.5
+        yPos = 0.1
+    elseif Config.UI.position == "bottom-center" then
+        xPos = 0.5
+        yPos = 0.85
+    end
+    
+    -- Set colors based on config style
+    local r, g, b, a = 255, 255, 255, 255
+    if Config.UI.style == "success" then
+        r, g, b = 76, 175, 80
+    elseif Config.UI.style == "error" then
+        r, g, b = 244, 67, 54
+    elseif Config.UI.style == "warning" then
+        r, g, b = 255, 193, 7
+    elseif Config.UI.style == "info" then
+        r, g, b = 33, 150, 243
+    end
+    
+    -- Draw title
+    drawText("⚡ TASER", xPos, yPos + yOffset, 0.5, r, g, b, 255)
+    yOffset = yOffset + 0.04
+    
+    -- Draw charges
+    local chargeText = "Charges: " .. getCartridgeIcons(taserCartridges, Config.MaxCartridges)
+    drawText(chargeText, xPos, yPos + yOffset, 0.4, 255, 255, 255, 255)
+    yOffset = yOffset + 0.03
+    
+    -- Draw cooldown or status
     if isOnCooldown then
-        mainText = mainText .. string.format("\n🔄 Cooldown: %s", formatTime(cooldownRemaining))
+        drawText("🤒 Cooldown: " .. formatTime(cooldownRemaining), xPos, yPos + yOffset, 0.4, 255, 152, 0, 255)
     elseif taserCartridges == 0 then
-        mainText = mainText .. "\n⚠️ RELOAD REQUIRED"
+        drawText("⚠️ RELOAD REQUIRED", xPos, yPos + yOffset, 0.4, 244, 67, 54, 255)
+    end
+end
+
+-- Update UI state
+local function updateUI()
+    local ped = PlayerPedId()
+    if GetSelectedPedWeapon(ped) ~= Config.TaserWeapon then
+        showUI = false
+        return
     end
 
-    -- Show main UI
-    lib.showTextUI(mainText, {
-        position = Config.UI.position,
-        icon = "bolt",
-        style = Config.UI.style
-    })
+    if not IsPlayerFreeAiming(PlayerId()) then
+        showUI = false
+        return
+    end
+    
+    showUI = true
 end
 
 -- Hide weapon HUD when taser is equipped
@@ -84,6 +137,14 @@ CreateThread(function()
     while true do
         Wait(100)
         updateUI()
+    end
+end)
+
+-- UI drawing thread - runs every frame
+CreateThread(function()
+    while true do
+        Wait(0)
+        drawTaserUI()
     end
 end)
 
@@ -150,7 +211,7 @@ CreateThread(function()
                     -- Still on cooldown
                     lib.notify({ 
                         title = "⚡ Smart Taser", 
-                        description = string.format("🔄 Cooldown active! %s remaining", formatTime(cooldownRemaining)), 
+                        description = string.format("🤒 Cooldown active! %s remaining", formatTime(cooldownRemaining)), 
                         type = "warning", 
                         duration = 2000 
                     })
@@ -185,8 +246,8 @@ AddEventHandler('smarttaser:reloadTaser', function()
     local ped = PlayerPedId()
     isReloading = true
     
-    -- Hide UI during reload to prevent conflicts
-    lib.hideTextUI()
+    -- Hide UI during reload
+    showUI = false
 
     -- Request the animation dict from config
     RequestAnimDict(Config.ReloadAnimation.dict)
