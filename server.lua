@@ -1,6 +1,14 @@
 local hasFramework = false
 local GetPlayer = nil
 
+-- Track reload states to prevent exploitation
+local playerReloadStates = {}
+local reloadCooldowns = {}
+local CONFIG = {
+    RELOAD_SERVER_COOLDOWN = 2500, -- Minimum time between reload requests (anti-spam)
+    RELOAD_TIMEOUT = 5000, -- Maximum time a reload can take before auto-reset
+}
+
 Citizen.CreateThread(function()
     Wait(1000)
     if GetResourceState('qb-core') == 'started' then
@@ -20,6 +28,21 @@ Citizen.CreateThread(function()
     end
 end)
 
+-- Clean up stale reload states periodically
+Citizen.CreateThread(function()
+    while true do
+        Wait(10000)
+        local currentTime = GetGameTimer()
+        for src, state in pairs(playerReloadStates) do
+            if state and (currentTime - state.startTime > CONFIG.RELOAD_TIMEOUT) then
+                playerReloadStates[src] = nil
+                reloadCooldowns[src] = nil
+                print(("[SmartTaser] Auto-reset reload state for player %s (timeout)") .. src)
+            end
+        end
+    end
+end)
+
 RegisterServerEvent('smarttaser:logTaser')
 AddEventHandler('smarttaser:logTaser', function(cartridgesLeft)
     local src = source
@@ -31,31 +54,88 @@ AddEventHandler('smarttaser:stunPlayer', function(targetId)
     TriggerClientEvent('smarttaser:applyStun', targetId)
 end)
 
+-- Client notifies server when reload is complete
+RegisterServerEvent('smarttaser:reloadComplete')
+AddEventHandler('smarttaser:reloadComplete', function()
+    local src = source
+    if playerReloadStates[src] then
+        playerReloadStates[src] = nil
+        print(("[SmartTaser] Player %s reload complete") .. src)
+    end
+end)
+
 RegisterServerEvent('smarttaser:checkCartridgeItem')
 AddEventHandler('smarttaser:checkCartridgeItem', function()
     local src = source
-    if not hasFramework or not GetPlayer then
-        TriggerClientEvent('smarttaser:reloadTaser', src)
+    local currentTime = GetGameTimer()
+    
+    -- Validate source
+    if not src or src <= 0 then
+        print("[SmartTaser] Invalid source in checkCartridgeItem")
         return
     end
-
-    local Player = GetPlayer(src)
-    if not Player then return end
-
-    local removed = false
-    if Player.Functions then
-        removed = Player.Functions.RemoveItem('taser_cartridge', 1)
-    elseif Player.removeInventoryItem then
-        local count = Player.getInventoryItem('taser_cartridge').count
-        if count > 0 then
-            Player.removeInventoryItem('taser_cartridge', 1)
-            removed = true
-        end
+    
+    -- Anti-spam: Check if player is already reloading
+    if playerReloadStates[src] and playerReloadStates[src].isReloading then
+        print(("[SmartTaser] Player %s attempted reload while already reloading") .. src)
+        return
     end
-
-    if removed then
-        TriggerClientEvent('smarttaser:reloadTaser', src)
+    
+    -- Anti-spam: Check cooldown between reload requests
+    if reloadCooldowns[src] and (currentTime - reloadCooldowns[src] < CONFIG.RELOAD_SERVER_COOLDOWN) then
+        print(("[SmartTaser] Player %s spamming reload requests") .. src)
+        TriggerClientEvent('chat:addMessage', src, {args = {"Taser", "Please wait before reloading again!"}})
+        return
+    end
+    
+    -- Set reload state and cooldown
+    playerReloadStates[src] = {
+        isReloading = true,
+        startTime = currentTime
+    }
+    reloadCooldowns[src] = currentTime
+    
+    -- Check for cartridge item if framework is available
+    local hasCartridge = false
+    if hasFramework and GetPlayer then
+        local Player = GetPlayer(src)
+        if not Player then 
+            playerReloadStates[src] = nil
+            return 
+        end
+        
+        local removed = false
+        if Player.Functions then
+            removed = Player.Functions.RemoveItem('taser_cartridge', 1)
+        elseif Player.removeInventoryItem then
+            local count = Player.getInventoryItem('taser_cartridge').count
+            if count > 0 then
+                Player.removeInventoryItem('taser_cartridge', 1)
+                removed = true
+            end
+        end
+        
+        hasCartridge = removed
+        
+        if not hasCartridge then
+            playerReloadStates[src] = nil
+            TriggerClientEvent('chat:addMessage', src, {args = {"Taser", "You have no taser cartridges!"}})
+            return
+        end
     else
-        TriggerClientEvent('chat:addMessage', src, {args = {"Taser", "You have no taser cartridges!"}})
+        -- No framework: allow reload without item check
+        hasCartridge = true
+    end
+    
+    -- All checks passed, trigger client reload
+    if hasCartridge then
+        TriggerClientEvent('smarttaser:reloadTaser', src)
+        
+        -- Schedule reload state reset after expected reload time
+        SetTimeout(Config.ReloadTime + 500, function()
+            if playerReloadStates[src] then
+                playerReloadStates[src] = nil
+            end
+        end)
     end
 end)
