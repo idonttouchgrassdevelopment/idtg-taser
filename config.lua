@@ -2,10 +2,25 @@ Config = {}
 
 Config.TaserWeapon = `WEAPON_STUNGUN`
 Config.MaxCartridges = 2
-Config.TaserCooldown = 5000 -- Cooldown between shots (ms)
-Config.StunDuration = 6500 -- How long target stays down (ms)
-Config.ReloadTime = 2000 -- Reload time (ms)
+Config.TaserCooldown = 5000 -- Cooldown between shots (ms) - ADJUST THIS VALUE PER SERVER NEEDS
+Config.StunDuration = 6500 -- How long target stays down (ms) - ADJUST THIS VALUE PER SERVER NEEDS
+Config.ReloadTime = 2000 -- Reload time (ms) - ADJUST THIS VALUE PER SERVER NEEDS
 Config.ReloadKey = 45 -- R
+
+-- Timer Configuration
+Config.Timers = {
+    -- Precision: decimal places shown in cooldown timer (1-2 recommended)
+    -- 1 = "3.2s", 2 = "3.24s"
+    cooldownPrecision = 1,
+    
+    -- Update frequency: how often the UI updates (in ms)
+    -- Lower = smoother but more CPU, Higher = less smooth but less CPU
+    -- Recommended: 0 (every frame) for accurate timing
+    updateInterval = 0,
+    
+    -- Ensure timer never goes negative (safety check)
+    preventNegative = true,
+}
 
 -- Reload Animation Configuration
 Config.ReloadAnimation = {
@@ -20,40 +35,95 @@ Config.ReloadAnimation = {
 -- Combat Pistol: dict = "anim@weapons@first_person@aiming@pistol@str", anim = "reload"
 -- Micro SMG: dict = "anim@weapons@smg@micro_str", anim = "reload"
 
--- UI Configuration
+-- UI Configuration (Ultra-Compact Redesign)
 Config.UI = {
-    -- Main UI positioning (options: "center", "right-center", "left-center", "top-center", "top-right", "top-left", "bottom-center", "bottom-right", "bottom-left")
-    position = "right-center",
+    -- Layout mode: "compact", "minimal", "detailed"
+    -- compact: Shows icon, cartridges, status, cooldown timer
+    -- minimal: Only icon and cartridges/status (0.06×0.04)
+    -- detailed: Legacy detailed view with all info
+    layout = "compact",
     
-    -- Style configuration - uses native colors (RGBA values)
-    style = {
-        -- Background color (hex or rgba format)
-        -- Examples: "#1a1a2e" or "rgba(26, 26, 46, 230)" or "rgba(0, 0, 0, 200)"
-        backgroundColor = "rgba(20, 20, 35, 240)",
+    -- Main taser UI positioning
+    taser = {
+        enabled = true,
+        position = "right-center", -- Positioned on right side, vertically centered
+        hideWhenNotAiming = true,
         
-        -- Text/accent color (hex format)
-        -- Examples: "#00d4ff" (cyan), "#ff6b6b" (red), "#4caf50" (green), "#ffd700" (gold)
-        color = "#00d4ff",
+        -- Ultra-compact horizontal bar layout with modern spacing
+        dimensions = {
+            width = 0.15,    -- Better spacing width
+            height = 0.050,  -- Increased modern height
+        },
         
-        -- Border color (hex or rgba format)
-        border = "rgba(0, 212, 255, 180)"
+        -- What elements to display (toggleable)
+        elements = {
+            icon = true,              -- ⚡ symbol
+            label = true,             -- "SMART TASER" text
+            cartridges = false,       -- Show numeric count (disabled in bar mode)
+            status = false,           -- Don't show READY/COOLDOWN (too verbose)
+            cooldownTimer = true,     -- Show timer (displays cooldown remaining)
+            chargeIndicator = true,   -- Show charge cells (like battery)
+            cooldownBar = false,      -- Show progress bar (disabled in compact mode)
+        },
+        
+        -- Timer display options
+        timerDisplay = {
+            showUnitLabel = true,     -- Show "s" suffix (3.2s vs 3.2)
+            alwaysShow = false,       -- Show timer even when ready (shows 0.0s)
+            hideWhenReady = true,     -- Hide timer when cooldown is done
+        },
+        
+        -- Charge indicator cell options
+        chargeIndicator = {
+            cellWidth = 0.015,        -- Width of each charge cell
+            cellHeight = 0.024,       -- Height of each charge cell
+            cellSpacing = 0.005,      -- Space between cells
+            filledColor = "#01ff00",  -- Bright neon green
+            emptyColor = "#ff3366",   -- Neon red when empty
+            borderColor = "rgba(0, 255, 0, 200)",
+        }
     },
     
-    -- Cooldown bar configuration
-    cooldownBar = {
+    -- Notification system (simplified)
+    notifications = {
         enabled = true,
-        -- Background color of the progress bar track
-        backgroundColor = "rgba(0, 0, 0, 150)",
-        -- Foreground color when cooldown is active
-        foregroundColor = "#ff6b6b",
-        -- Color when ready to fire (green)
-        readyColor = "#4caf50"
+        maxVisible = 1,              -- Only 1 notification at a time
+        position = "top-right",      -- "top-left", "top-right", "bottom-left", "bottom-right"
+        width = 0.12,
+        height = 0.04,
+        duration = 2500,             -- Auto-dismiss time (ms)
+        stackDirection = "down",     -- New notifications appear below existing ones
+        
+        -- Which events show notifications
+        showOn = {
+            fire = true,             -- Show when firing
+            cooldown = false,         -- Don't spam cooldown messages
+            reload = true,            -- Show reload complete
+            hit = true,               -- Show when hitting target
+            miss = false,             -- Don't show miss messages
+        }
     },
     
-    -- Cartridge icons configuration
-    icons = {
-        enabled = true,
-        filled = "🔋",  -- Emoji for full cartridges
-        empty = "⬛"   -- Emoji for empty cartridges
+    -- Theme and styling
+    theme = {
+        mode = "neon",               -- "dark", "light", "neon"
+        font = 4,                    -- Font ID (0-7 available in GTA5)
+        
+        colors = {
+            background = "rgba(12, 12, 22, 250)",    -- Darker modern background
+            text = "#ffffff",
+            accent = "#00ffff",       -- Bright cyan neon
+            success = "#01ff00",      -- Bright neon green
+            warning = "#ff9800",      -- Orange
+            error = "#ff3366",        -- Neon red/pink
+        },
+        
+        -- Typography
+        titleScale = 0.40,
+        bodyScale = 0.33,
+        
+        -- Visual styling
+        border = false,              -- Minimal design, no borders
+        padding = 0.008,
     }
 }
