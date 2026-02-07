@@ -35,7 +35,7 @@ Config.ReloadAnimation = {
 -- Combat Pistol: dict = "anim@weapons@first_person@aiming@pistol@str", anim = "reload"
 -- Micro SMG: dict = "anim@weapons@smg@micro_str", anim = "reload"
 
--- UI Configuration (Ultra-Compact Redesign)
+-- UI Configuration (Enhanced with Modern Visual Effects)
 Config.UI = {
     -- Layout mode: "compact", "minimal", "detailed"
     -- compact: Shows icon, cartridges, status, cooldown timer
@@ -49,10 +49,10 @@ Config.UI = {
         position = "right-center", -- Positioned on right side, vertically centered
         hideWhenNotAiming = true,
         
-        -- Ultra-compact horizontal bar layout with modern spacing
+        -- Modern horizontal bar layout with enhanced spacing
         dimensions = {
-            width = 0.15,    -- Better spacing width
-            height = 0.050,  -- Increased modern height
+            width = 0.165,    -- Wider for better spacing
+            height = 0.055,   -- Slightly taller for enhanced visuals
         },
         
         -- What elements to display (toggleable)
@@ -73,30 +73,30 @@ Config.UI = {
             hideWhenReady = true,     -- Hide timer when cooldown is done
         },
         
-        -- Charge indicator cell options
+        -- Charge indicator cell options with modern styling
         chargeIndicator = {
-            cellWidth = 0.015,        -- Width of each charge cell
-            cellHeight = 0.024,       -- Height of each charge cell
-            cellSpacing = 0.005,      -- Space between cells
-            filledColor = "#01ff00",  -- Bright neon green
-            emptyColor = "#ff3366",   -- Neon red when empty
-            borderColor = "rgba(0, 255, 0, 200)",
+            cellWidth = 0.018,        -- Wider cells for better visibility
+            cellHeight = 0.028,       -- Taller cells
+            cellSpacing = 0.006,      -- More spacing between cells
+            filledColor = "#00ff88",  -- Bright neon green/cyan
+            emptyColor = "#ff4466",   -- Neon pink/red when empty
+            borderColor = "rgba(0, 255, 136, 255)",
         }
     },
     
-    -- Notification system (simplified)
+    -- Notification system (enhanced)
     notifications = {
         enabled = true,
         maxVisible = 1,              -- Only 1 notification at a time
         position = "top-right",      -- "top-left", "top-right", "bottom-left", "bottom-right"
-        width = 0.12,
-        height = 0.04,
-        duration = 2500,             -- Auto-dismiss time (ms)
+        width = 0.14,
+        height = 0.045,
+        duration = 2800,             -- Slightly longer auto-dismiss time (ms)
         stackDirection = "down",     -- New notifications appear below existing ones
         
         -- Which events show notifications
         showOn = {
-            fire = true,             -- Show when firing
+            fire = false,            -- Don't show fire messages (less spam)
             cooldown = false,         -- Don't spam cooldown messages
             reload = true,            -- Show reload complete
             hit = true,               -- Show when hitting target
@@ -104,26 +104,26 @@ Config.UI = {
         }
     },
     
-    -- Theme and styling
+    -- Theme and styling (modern and sexy)
     theme = {
         mode = "neon",               -- "dark", "light", "neon"
         font = 4,                    -- Font ID (0-7 available in GTA5)
         
         colors = {
-            background = "rgba(12, 12, 22, 250)",    -- Darker modern background
+            background = "rgba(8, 8, 18, 245)",    -- Deep dark blue-black
             text = "#ffffff",
             accent = "#00ffff",       -- Bright cyan neon
-            success = "#01ff00",      -- Bright neon green
-            warning = "#ff9800",      -- Orange
-            error = "#ff3366",        -- Neon red/pink
+            success = "#00ff88",      -- Bright neon green-cyan
+            warning = "#ffaa00",      -- Warm orange
+            error = "#ff4466",        -- Neon pink/red
         },
         
         -- Typography
-        titleScale = 0.40,
-        bodyScale = 0.33,
+        titleScale = 0.42,
+        bodyScale = 0.35,
         
         -- Visual styling
         border = false,              -- Minimal design, no borders
-        padding = 0.008,
+        padding = 0.010,
     }
 }

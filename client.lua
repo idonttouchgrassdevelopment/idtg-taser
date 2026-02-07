@@ -7,11 +7,61 @@ local lastTase = 0
 local isReloading = false
 local cooldownEndTime = 0
 local showUI = false
+local reloadStartTime = 0
+local reloadProgress = 0
+
+-- Animation state for UI elements
+local animationStates = {
+    pulseIntensity = 0,
+    pulseDirection = 1,
+    glowIntensity = 0,
+    slideIn = 0,
+}
 
 -- Debug logging for timer verification
 local function logTimerDebug(msg)
     -- Uncomment the line below to enable debug logging
     -- print("^2[TASER TIMER DEBUG]^7 " .. msg)
+end
+
+-- ============================================
+-- ANIMATION & VISUAL EFFECT FUNCTIONS
+-- ============================================
+
+-- Update animation states
+local function updateAnimations()
+    -- Pulsing effect for charge indicators
+    animationStates.pulseIntensity = animationStates.pulseIntensity + (0.03 * animationStates.pulseDirection)
+    if animationStates.pulseIntensity >= 1 then
+        animationStates.pulseIntensity = 1
+        animationStates.pulseDirection = -1
+    elseif animationStates.pulseIntensity <= 0 then
+        animationStates.pulseIntensity = 0
+        animationStates.pulseDirection = 1
+    end
+    
+    -- Glow intensity based on reload
+    if isReloading then
+        local reloadElapsed = GetGameTimer() - reloadStartTime
+        reloadProgress = math.min(1, reloadElapsed / Config.ReloadTime)
+        animationStates.glowIntensity = 0.5 + (math.sin(reloadElapsed * 0.01) * 0.3)
+    else
+        reloadProgress = 0
+        animationStates.glowIntensity = 0.3 + (math.sin(GetGameTimer() * 0.003) * 0.1)
+    end
+    
+    -- Slide in animation
+    if showUI and animationStates.slideIn < 1 then
+        animationStates.slideIn = math.min(1, animationStates.slideIn + 0.08)
+    elseif not showUI and animationStates.slideIn > 0 then
+        animationStates.slideIn = math.max(0, animationStates.slideIn - 0.12)
+    end
+end
+
+-- Ease out cubic for smooth animations
+local function easeOutCubic(t)
+    t = math.max(0, math.min(1, t))
+    return 1 - math.pow(1 - t, 3)
 end
 
 -- ============================================
@@ -79,13 +129,21 @@ local function showNotification(data)
     end
 end
 
--- Draw single notification (toast-style)
+-- Draw single notification (enhanced with animations)
 local function drawNotification()
     if not activeNotification then return end
     
     local currentTime = GetGameTimer()
     local elapsed = currentTime - activeNotification.startTime
     local progress = 1 - (elapsed / activeNotification.duration)
+    
+    -- Slide in/out animation
+    local slideProgress = 1
+    if elapsed < 300 then
+        slideProgress = easeOutCubic(elapsed / 300)
+    elseif elapsed > activeNotification.duration - 300 then
+        slideProgress = easeOutCubic((activeNotification.duration - elapsed) / 300)
+    end
     
     if progress <= 0 then
         activeNotification = nil
@@ -100,52 +158,76 @@ local function drawNotification()
     local color = colors[activeNotification.type] or colors.default
     local accentR, accentG, accentB = color.r, color.g, color.b
     
-    -- Position based on config
+    -- Position based on config with slide animation
     local notifConfig = Config.UI.notifications
-    local xPos = 0.92
-    local yPos = 0.08
+    local baseX = 0.92
+    local baseY = 0.08
     
     if notifConfig.position == "top-left" then
-        xPos = 0.08
-        yPos = 0.08
+        baseX = 0.08
+        baseY = 0.08
     elseif notifConfig.position == "bottom-left" then
-        xPos = 0.08
-        yPos = 0.92
+        baseX = 0.08
+        baseY = 0.92
     elseif notifConfig.position == "bottom-right" then
-        xPos = 0.92
-        yPos = 0.92
+        baseX = 0.92
+        baseY = 0.92
     end
+    
+    -- Apply slide animation
+    local xOffset = (baseX > 0.5 and 1 or -1) * 0.15 * (1 - slideProgress)
+    local xPos = baseX + xOffset
+    local yPos = baseY
     
     local width = notifConfig.width
     local height = notifConfig.height
     local themeConfig = Config.UI.theme
     
-    -- Parse background color
+    -- Parse background color with fade animation
     local bgR, bgG, bgB, bgA = parseRgba(themeConfig.colors.background)
+    bgA = math.floor(bgA * slideProgress)
     
-    -- Draw notification background with accent border
+    -- Draw notification background with gradient effect
     drawRect(xPos, yPos, width, height, bgR, bgG, bgB, bgA)
-    drawRect(xPos - (width / 2) + 0.002, yPos, 0.004, height - 0.002, accentR, accentG, accentB, 255)
     
-    -- Draw title
+    -- Draw gradient overlay
+    drawRect(xPos, yPos, width, height * 0.3, accentR, accentG, accentB, math.floor(15 * slideProgress))
+    
+    -- Draw animated accent border with glow
+    drawRect(xPos - (width / 2) + 0.002, yPos, 0.0035, height - 0.001, accentR, accentG, accentB, math.floor(255 * slideProgress))
+    drawRect(xPos - (width / 2) + 0.002, yPos, 0.008, height - 0.001, accentR, accentG, accentB, math.floor(60 * slideProgress))
+    
+    -- Draw corner accents
+    local cornerSize = 0.006
+    drawRect(xPos - (width / 2) + cornerSize, yPos - (height / 2) + 0.001, cornerSize * 2, 0.0015, accentR, accentG, accentB, math.floor(200 * slideProgress))
+    drawRect(xPos - (width / 2) + 0.001, yPos - (height / 2) + cornerSize, 0.0015, cornerSize * 2, accentR, accentG, accentB, math.floor(200 * slideProgress))
+    
+    -- Draw title with enhanced styling
     SetTextFont(themeConfig.font)
-    SetTextScale(0.36, 0.36)
-    SetTextColour(accentR, accentG, accentB, 255)
+    SetTextScale(0.38, 0.38)
+    SetTextColour(accentR, accentG, accentB, math.floor(255 * slideProgress))
     SetTextCentre(false)
-    SetTextDropshadow(2, 0, 0, 0, 180)
+    SetTextDropshadow(2, accentR, accentG, accentB, 150)
+    SetTextOutline()
     SetTextEntry("STRING")
     AddTextComponentString(activeNotification.title)
-    DrawText(xPos - (width / 2) + 0.012, yPos - (height / 2) + 0.004)
+    DrawText(xPos - (width / 2) + 0.015, yPos - (height / 2) + 0.005)
     
     -- Draw description
     SetTextFont(themeConfig.font)
     SetTextScale(0.32, 0.32)
-    SetTextColour(255, 255, 255, 255)
+    SetTextColour(255, 255, 255, math.floor(255 * slideProgress))
     SetTextCentre(false)
     SetTextDropshadow(2, 0, 0, 0, 180)
     SetTextEntry("STRING")
     AddTextComponentString(activeNotification.description)
-    DrawText(xPos - (width / 2) + 0.012, yPos + (height / 2) - 0.024)
+    DrawText(xPos - (width / 2) + 0.015, yPos + (height / 2) - 0.025)
+    
+    -- Draw progress bar at bottom
+    local progressWidth = width * progress
+    local progressY = yPos + (height / 2) - 0.001
+    drawRect(xPos - (width / 2) + (progressWidth / 2), progressY, progressWidth, 0.002, accentR, accentG, accentB, math.floor(255 * slideProgress))
+    drawRect(xPos - (width / 2) + (progressWidth / 2), progressY, progressWidth, 0.004, accentR, accentG, accentB, math.floor(100 * slideProgress))
 end
 
 -- Notification render thread
@@ -183,9 +265,12 @@ local function getCartridgeDisplay(count, max)
     return string.format("%d/%d", count, max)
 end
 
--- Draw the taser UI (Ultra-Compact Horizontal Bar)
+-- Draw the taser UI (Enhanced with Modern Visual Effects)
 local function drawTaserUI()
-    if not showUI then return end
+    -- Update animations first
+    updateAnimations()
+    
+    if not showUI or animationStates.slideIn <= 0 then return end
     
     -- Calculate cooldown status with safety checks
     local currentTime = GetGameTimer()
@@ -201,6 +286,9 @@ local function drawTaserUI()
     local bgR, bgG, bgB, bgA = parseRgba(themeConfig.colors.background)
     local textR, textG, textB = hexToRgb(themeConfig.colors.text)
     local accentR, accentG, accentB = hexToRgb(themeConfig.colors.accent)
+    
+    -- Apply slide animation
+    local easedSlide = easeOutCubic(animationStates.slideIn)
     
     -- Calculate screen position
     local xPos = 0.5
@@ -234,50 +322,93 @@ local function drawTaserUI()
         yPos = 0.92 - (height / 2)
     end
     
-    -- Draw background bar
-    drawRect(xPos, yPos, width, height, bgR, bgG, bgB, bgA)
+    -- Apply slide animation to position
+    local animatedX = xPos + (xPos > 0.5 and (1 - easedSlide) * 0.1 or -(1 - easedSlide) * 0.1)
+    local animatedOpacity = math.floor(255 * easedSlide)
     
-    -- Draw modern glowing border effect with double border
-    drawRect(xPos, yPos - (height / 2) - 0.001, width, 0.0025, accentR, accentG, accentB, 255) -- Top glow
-    drawRect(xPos, yPos + (height / 2) + 0.001, width, 0.0025, accentR, accentG, accentB, 255) -- Bottom glow
-    drawRect(xPos - (width / 2) - 0.001, yPos, 0.0025, height, accentR, accentG, accentB, 200) -- Left
-    drawRect(xPos + (width / 2) + 0.001, yPos, 0.0025, height, accentR, accentG, accentB, 200) -- Right
+    -- Draw gradient background (simulated with layered rectangles)
+    drawRect(animatedX, animatedY or yPos, width, height, bgR, bgG, bgB, math.floor(bgA * easedSlide))
     
-    -- Add inner border for futuristic look
-    drawRect(xPos, yPos - (height / 2) + 0.003, width, 0.001, accentR, accentG, accentB, 120) -- Inner top
-    drawRect(xPos, yPos + (height / 2) - 0.003, width, 0.001, accentR, accentG, accentB, 120) -- Inner bottom
+    -- Add subtle gradient overlay (darker at bottom)
+    drawRect(animatedX, animatedY or yPos, width, height * 0.4, 0, 0, 0, math.floor(30 * easedSlide))
     
-    -- Add enhanced outer glow for futuristic effect
-    drawRect(xPos, yPos - (height / 2) - 0.003, width, 0.002, accentR, accentG, accentB, 60) -- Extended top glow
-    drawRect(xPos, yPos + (height / 2) + 0.003, width, 0.002, accentR, accentG, accentB, 60) -- Extended bottom glow
+    -- Draw animated glowing border with pulsing effect
+    local pulseAlpha = math.floor(150 + (animationStates.pulseIntensity * 105))
+    local glowWidth = 0.0025 + (animationStates.glowIntensity * 0.001)
     
-    -- LEFT SECTION: Icon (Lightning Bolt) - Centered vertically, larger and futuristic
-    local leftX = xPos - (width / 2) + 0.012
+    -- Top border with glow
+    drawRect(animatedX, animatedY or yPos - (height / 2) - glowWidth, width, glowWidth * 2, accentR, accentG, accentB, math.floor(255 * easedSlide))
+    drawRect(animatedX, animatedY or yPos - (height / 2) - glowWidth - 0.002, width, 0.0015, accentR, accentG, accentB, math.floor(pulseAlpha * easedSlide))
+    
+    -- Bottom border with glow
+    drawRect(animatedX, animatedY or yPos + (height / 2) + glowWidth, width, glowWidth * 2, accentR, accentG, accentB, math.floor(255 * easedSlide))
+    drawRect(animatedX, animatedY or yPos + (height / 2) + glowWidth + 0.002, width, 0.0015, accentR, accentG, accentB, math.floor(pulseAlpha * easedSlide))
+    
+    -- Left border
+    drawRect(animatedX - (width / 2) - glowWidth, animatedY or yPos, glowWidth * 2, height, accentR, accentG, accentB, math.floor(200 * easedSlide))
+    drawRect(animatedX - (width / 2) - glowWidth - 0.002, animatedY or yPos, 0.0015, height, accentR, accentG, accentB, math.floor(pulseAlpha * 0.8 * easedSlide))
+    
+    -- Right border
+    drawRect(animatedX + (width / 2) + glowWidth, animatedY or yPos, glowWidth * 2, height, accentR, accentG, accentB, math.floor(200 * easedSlide))
+    drawRect(animatedX + (width / 2) + glowWidth + 0.002, animatedY or yPos, 0.0015, height, accentR, accentG, accentB, math.floor(pulseAlpha * 0.8 * easedSlide))
+    
+    -- Corner accents for futuristic look
+    local cornerSize = 0.008
+    local cornerAlpha = math.floor(180 * easedSlide)
+    
+    -- Top-left corner
+    drawRect(animatedX - (width / 2) + cornerSize, animatedY or yPos - (height / 2) + 0.001, cornerSize * 2, 0.002, accentR, accentG, accentB, cornerAlpha)
+    drawRect(animatedX - (width / 2) + 0.001, animatedY or yPos - (height / 2) + cornerSize, 0.002, cornerSize * 2, accentR, accentG, accentB, cornerAlpha)
+    
+    -- Top-right corner
+    drawRect(animatedX + (width / 2) - cornerSize, animatedY or yPos - (height / 2) + 0.001, cornerSize * 2, 0.002, accentR, accentG, accentB, cornerAlpha)
+    drawRect(animatedX + (width / 2) - 0.001, animatedY or yPos - (height / 2) + cornerSize, 0.002, cornerSize * 2, accentR, accentG, accentB, cornerAlpha)
+    
+    -- Bottom-left corner
+    drawRect(animatedX - (width / 2) + cornerSize, animatedY or yPos + (height / 2) - 0.001, cornerSize * 2, 0.002, accentR, accentG, accentB, cornerAlpha)
+    drawRect(animatedX - (width / 2) + 0.001, animatedY or yPos + (height / 2) - cornerSize, 0.002, cornerSize * 2, accentR, accentG, accentB, cornerAlpha)
+    
+    -- Bottom-right corner
+    drawRect(animatedX + (width / 2) - cornerSize, animatedY or yPos + (height / 2) - 0.001, cornerSize * 2, 0.002, accentR, accentG, accentB, cornerAlpha)
+    drawRect(animatedX + (width / 2) - 0.001, animatedY or yPos + (height / 2) - cornerSize, 0.002, cornerSize * 2, accentR, accentG, accentB, cornerAlpha)
+    
+    -- LEFT SECTION: Icon (Lightning Bolt) with pulse animation
+    local leftX = animatedX - (width / 2) + 0.015
     if taserConfig.elements.icon then
+        local iconScale = 0.42 + (animationStates.pulseIntensity * 0.04)
+        local iconAlpha = math.floor(230 + (animationStates.pulseIntensity * 25))
         SetTextFont(themeConfig.font)
-        SetTextScale(0.38, 0.38)  -- Slightly smaller for balance
-        SetTextColour(accentR, accentG, accentB, 255)
+        SetTextScale(iconScale, iconScale)
+        SetTextColour(accentR, accentG, accentB, iconAlpha)
         SetTextCentre(true)
-        SetTextDropshadow(3, 0, 0, 0, 255)  -- Stronger shadow
+        SetTextDropshadow(3, accentR, accentG, accentB, 180)
+        SetTextEdge(1, accentR, accentG, accentB, 150)
         SetTextEntry("STRING")
         AddTextComponentString("⚡")
-        DrawText(leftX, yPos - 0.016)  -- Centered in UI box
+        DrawText(leftX, yPos - 0.014)
     end
     
-    -- CENTER SECTION: Label - Modern futuristic style
-    local centerX = xPos - 0.018
+    -- CENTER SECTION: Label with modern styling
+    local centerX = animatedX - 0.015
     if taserConfig.elements.label then
         SetTextFont(themeConfig.font)
-        SetTextScale(0.36, 0.36)  -- Larger text size
-        SetTextColour(textR, textG, textB, 255)
+        SetTextScale(0.38, 0.38)
+        SetTextColour(textR, textG, textB, animatedOpacity)
         SetTextCentre(true)
-        SetTextDropshadow(3, 0, 0, 0, 255)  -- Stronger shadow for depth
+        SetTextDropshadow(2, 0, 0, 0, 200)
+        SetTextOutline()
         SetTextEntry("STRING")
-        AddTextComponentString("Taser Cartridges")
-        DrawText(centerX, yPos - 0.012)  -- Raised slightly higher
+        
+        local labelText = isReloading and "RELOADING..." or "TASER"
+        if isOnCooldown and not isReloading then
+            labelText = "COOLDOWN"
+        end
+        
+        AddTextComponentString(labelText)
+        DrawText(centerX, yPos - 0.012)
     end
     
-    -- RIGHT SECTION: Charge Indicator Cells
+    -- RIGHT SECTION: Enhanced Charge Indicator with Animations
     if taserConfig.elements.chargeIndicator then
         local cellWidth = chargeConfig.cellWidth
         local cellHeight = chargeConfig.cellHeight
@@ -286,57 +417,97 @@ local function drawTaserUI()
         local emptyR, emptyG, emptyB = hexToRgb(chargeConfig.emptyColor)
         local borderR, borderG, borderB, borderA = parseRgba(chargeConfig.borderColor)
         
-        -- Calculate starting X position for cells (right side) - better spacing
+        -- Calculate starting X position for cells
         local totalCellWidth = (Config.MaxCartridges * cellWidth) + ((Config.MaxCartridges - 1) * cellSpacing)
-        local cellStartX = xPos + (width / 2) - 0.012 - totalCellWidth
+        local cellStartX = animatedX + (width / 2) - 0.012 - totalCellWidth
         
-        -- Draw charge cells with futuristic styling
+        -- Draw charge cells with enhanced animations
         for i = 1, Config.MaxCartridges do
             local cellX = cellStartX + ((i - 1) * (cellWidth + cellSpacing)) + (cellWidth / 2)
             local cellY = yPos
             
             -- Determine cell appearance based on charge status
             local cellR, cellG, cellB, cellA
+            local glowR, glowG, glowB, glowA
+            
             if i <= taserCartridges then
-                -- Charged - full opacity with glow
-                cellR, cellG, cellB, cellA = filledR, filledG, filledB, 255
+                -- Charged - with pulse animation
+                cellR, cellG, cellB, cellA = filledR, filledG, filledB, animatedOpacity
+                glowR, glowG, glowB, glowA = filledR, filledG, filledB, math.floor((80 + animationStates.pulseIntensity * 40) * easedSlide)
             else
-                -- Empty - reduced opacity (grayed out)
-                cellR, cellG, cellB, cellA = emptyR, emptyG, emptyB, 80
+                -- Empty - reduced opacity
+                cellR, cellG, cellB, cellA = emptyR, emptyG, emptyB, math.floor(80 * easedSlide)
+                glowR, glowG, glowB, glowA = emptyR, emptyG, emptyB, 0
             end
             
-            -- Draw outer glow effect for charged cells
+            -- Draw animated glow for charged cells
             if i <= taserCartridges then
-                drawRect(cellX, cellY, cellWidth + 0.003, cellHeight + 0.003, cellR, cellG, cellB, 80)
+                local glowSize = 0.002 + (animationStates.pulseIntensity * 0.002)
+                drawRect(cellX, cellY, cellWidth + glowSize * 2, cellHeight + glowSize * 2, glowR, glowG, glowB, glowA)
             end
             
-            -- Draw filled cell (core)
+            -- Draw cell with rounded corners (simulated)
             drawRect(cellX, cellY, cellWidth, cellHeight, cellR, cellG, cellB, cellA)
             
-            -- Draw cell border with adaptive glow (always visible)
-            local borderA = i <= taserCartridges and 255 or 120
-            drawRect(cellX, cellY - (cellHeight / 2), cellWidth, 0.002, borderR, borderG, borderB, borderA) -- Top
-            drawRect(cellX, cellY + (cellHeight / 2), cellWidth, 0.002, borderR, borderG, borderB, borderA) -- Bottom
-            drawRect(cellX - (cellWidth / 2), cellY, 0.002, cellHeight, borderR, borderG, borderB, borderA) -- Left
-            drawRect(cellX + (cellWidth / 2), cellY, 0.002, cellHeight, borderR, borderG, borderB, borderA) -- Right
+            -- Draw glowing border
+            local borderAlpha = i <= taserCartridges and math.floor((220 + animationStates.pulseIntensity * 35) * easedSlide) or math.floor(100 * easedSlide)
+            drawRect(cellX, cellY - (cellHeight / 2), cellWidth, 0.0025, borderR, borderG, borderB, borderAlpha)
+            drawRect(cellX, cellY + (cellHeight / 2), cellWidth, 0.0025, borderR, borderG, borderB, borderAlpha)
+            drawRect(cellX - (cellWidth / 2), cellY, 0.0025, cellHeight, borderR, borderG, borderB, borderAlpha)
+            drawRect(cellX + (cellWidth / 2), cellY, 0.0025, cellHeight, borderR, borderG, borderB, borderAlpha)
+            
+            -- Inner glow for charged cells
+            if i <= taserCartridges then
+                drawRect(cellX, cellY, cellWidth * 0.6, cellHeight * 0.4, 255, 255, 255, math.floor(60 * animationStates.pulseIntensity * easedSlide))
+            end
         end
     end
     
-    -- COOLDOWN TIMER - Display centered between label and charge cells
-    if isOnCooldown and taserConfig.elements.cooldownTimer then
-        local timerX = xPos + 0.020
-        local timerY = yPos - 0.008
+    -- RELOAD PROGRESS BAR (When reloading)
+    if isReloading then
+        local barWidth = width - 0.02
+        local barHeight = 0.004
+        local barX = animatedX
+        local barY = yPos + (height / 2) - 0.012
+        
+        -- Progress bar background
+        drawRect(barX, barY, barWidth, barHeight, 30, 30, 40, math.floor(200 * easedSlide))
+        
+        -- Progress bar fill
+        local fillWidth = barWidth * reloadProgress
+        local progressR, progressG, progressB = hexToRgb(themeConfig.colors.accent)
+        drawRect(barX - (barWidth / 2) + (fillWidth / 2), barY, fillWidth, barHeight, progressR, progressG, progressB, math.floor(255 * easedSlide))
+        
+        -- Progress bar glow
+        drawRect(barX - (barWidth / 2) + (fillWidth / 2), barY, fillWidth, barHeight + 0.002, progressR, progressG, progressB, math.floor(100 * easedSlide))
+    end
+    
+    -- COOLDOWN TIMER with enhanced styling
+    if isOnCooldown and taserConfig.elements.cooldownTimer and not isReloading then
+        local timerX = animatedX + 0.020
+        local timerY = yPos - 0.006
         local timerText = formatTime(cooldownRemaining)
         
-        -- Draw timer text only
+        -- Draw timer background
+        local timerBgWidth = 0.035
+        local timerBgHeight = 0.018
+        drawRect(timerX, timerY, timerBgWidth, timerBgHeight, 0, 0, 0, math.floor(180 * easedSlide))
+        
+        -- Draw timer border
+        drawRect(timerX, timerY - (timerBgHeight / 2), timerBgWidth, 0.0015, accentR, accentG, accentB, math.floor(200 * easedSlide))
+        drawRect(timerX, timerY + (timerBgHeight / 2), timerBgWidth, 0.0015, accentR, accentG, accentB, math.floor(200 * easedSlide))
+        drawRect(timerX - (timerBgWidth / 2), timerY, 0.0015, timerBgHeight, accentR, accentG, accentB, math.floor(200 * easedSlide))
+        drawRect(timerX + (timerBgWidth / 2), timerY, 0.0015, timerBgHeight, accentR, accentG, accentB, math.floor(200 * easedSlide))
+        
+        -- Draw timer text
         SetTextFont(themeConfig.font)
-        SetTextScale(0.26, 0.26)  -- Smaller timer text
-        SetTextColour(255, 255, 255, 255)  -- White text
+        SetTextScale(0.30, 0.30)
+        SetTextColour(255, 255, 255, animatedOpacity)
         SetTextCentre(true)
         SetTextDropshadow(2, 0, 0, 0, 255)
         SetTextEntry("STRING")
         AddTextComponentString(timerText)
-        DrawText(timerX, timerY)
+        DrawText(timerX, timerY - 0.003)
     end
 end
 
@@ -486,9 +657,10 @@ AddEventHandler('smarttaser:reloadTaser', function()
     
     local ped = PlayerPedId()
     isReloading = true
+    reloadStartTime = GetGameTimer()
     
-    -- Hide UI during reload
-    showUI = false
+    -- Keep UI visible during reload for progress bar
+    showUI = true
 
     -- Request the animation dict from config
     RequestAnimDict(Config.ReloadAnimation.dict)
@@ -500,6 +672,7 @@ AddEventHandler('smarttaser:reloadTaser', function()
         if GetGameTimer() - startTime > timeout then
             print("Failed to load animation dict: " .. Config.ReloadAnimation.dict)
             isReloading = false
+            TriggerServerEvent('smarttaser:reloadComplete')
             return
         end
     end
@@ -533,8 +706,19 @@ AddEventHandler('smarttaser:reloadTaser', function()
     
     -- Reload complete
     taserCartridges = Config.MaxCartridges
-    
     isReloading = false
+    
+    -- Notify server that reload is complete
+    TriggerServerEvent('smarttaser:reloadComplete')
+    
+    -- Show reload complete notification
+    if Config.UI.notifications.showOn.reload then
+        showNotification({ 
+            title = "⚡ Reloaded", 
+            description = string.format("Ready to fire! %d cartridges", taserCartridges),
+            type = "success", 
+        })
+    end
 end)
 
 -- Stun effect event
