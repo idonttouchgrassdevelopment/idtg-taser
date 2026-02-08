@@ -11,4 +11,12 @@ client_script 'client.lua'
 server_script 'server.lua'
 shared_script 'config.lua'
 
+
 lua54 'yes'
+
+ui_page 'ui-mockup.html'
+
+files {
+    'ui-mockup.html',
+    'taser_cartridge.png'
+}
