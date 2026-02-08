@@ -9,6 +9,8 @@ local cooldownEndTime = 0
 local showUI = false
 local reloadStartTime = 0
 local reloadProgress = 0
+local safetyOn = Config.Safety and Config.Safety.defaultOn or false
+local lastSafetyToggle = 0
 
 -- ============================================
 -- UTILITY FUNCTIONS
@@ -26,7 +28,7 @@ end
 -- Parse rgba color
 local function parseRgba(color)
     local r, g, b, a = 255, 255, 255, 255
-    
+
     if color:sub(1, 1) == "#" then
         r, g, b = hexToRgb(color)
     elseif color:match("rgba?%(") then
@@ -39,7 +41,7 @@ local function parseRgba(color)
             a = 255
         end
     end
-    
+
     return r, g, b, a
 end
 
@@ -53,16 +55,16 @@ local function formatTime(ms)
     if Config.Timers.preventNegative and ms < 0 then
         ms = 0
     end
-    
+
     local precision = Config.Timers.cooldownPrecision or 1
     local seconds = ms / 1000
     local format = "%." .. precision .. "f"
     local timeStr = string.format(format, seconds)
-    
+
     if Config.UI.taser.timerDisplay.showUnitLabel then
         timeStr = timeStr .. "s"
     end
-    
+
     return timeStr
 end
 
@@ -81,11 +83,11 @@ end
 -- Draw single notification
 local function drawNotification()
     if not activeNotification then return end
-    
+
     local currentTime = GetGameTimer()
     local elapsed = currentTime - activeNotification.startTime
     local progress = 1 - (elapsed / activeNotification.duration)
-    
+
     -- Check if notification expired
     if progress <= 0 then
         activeNotification = nil
@@ -94,7 +96,7 @@ local function drawNotification()
         end
         return
     end
-    
+
     -- Parse colors based on type
     local colors = {
         success = {r = 76, g = 175, b = 80},
@@ -105,12 +107,12 @@ local function drawNotification()
     }
     local color = colors[activeNotification.type] or colors.default
     local accentR, accentG, accentB = color.r, color.g, color.b
-    
+
     -- Position based on config
     local notifConfig = Config.UI.notifications
     local baseX = 0.92
     local baseY = 0.08
-    
+
     if notifConfig.position == "top-left" then
         baseX = 0.08
         baseY = 0.08
@@ -121,31 +123,31 @@ local function drawNotification()
         baseX = 0.92
         baseY = 0.92
     end
-    
+
     local xPos = baseX
     local yPos = baseY
     local width = notifConfig.width
     local height = notifConfig.height
     local themeConfig = Config.UI.theme
-    
+
     -- Parse background color
     local bgR, bgG, bgB, bgA = parseRgba(themeConfig.colors.background)
-    
+
     -- Draw notification background
     drawRect(xPos, yPos, width, height, bgR, bgG, bgB, bgA)
-    
+
     -- Draw gradient overlay
     drawRect(xPos, yPos, width, height * 0.3, accentR, accentG, accentB, 15)
-    
+
     -- Draw animated accent border with glow
     drawRect(xPos - (width / 2) + 0.002, yPos, 0.0035, height - 0.001, accentR, accentG, accentB, 255)
     drawRect(xPos - (width / 2) + 0.002, yPos, 0.008, height - 0.001, accentR, accentG, accentB, 60)
-    
+
     -- Draw corner accents
     local cornerSize = 0.006
     drawRect(xPos - (width / 2) + cornerSize, yPos - (height / 2) + 0.001, cornerSize * 2, 0.0015, accentR, accentG, accentB, 200)
     drawRect(xPos - (width / 2) + 0.001, yPos - (height / 2) + cornerSize, 0.0015, cornerSize * 2, accentR, accentG, accentB, 200)
-    
+
     -- Draw title
     SetTextFont(themeConfig.font)
     SetTextScale(0.38, 0.38)
@@ -156,7 +158,7 @@ local function drawNotification()
     SetTextEntry("STRING")
     AddTextComponentString(activeNotification.title)
     DrawText(xPos - (width / 2) + 0.015, yPos - (height / 2) + 0.005)
-    
+
     -- Draw description
     SetTextFont(themeConfig.font)
     SetTextScale(0.32, 0.32)
@@ -166,7 +168,7 @@ local function drawNotification()
     SetTextEntry("STRING")
     AddTextComponentString(activeNotification.description)
     DrawText(xPos - (width / 2) + 0.015, yPos + (height / 2) - 0.025)
-    
+
     -- Draw progress bar at bottom
     local progressWidth = width * progress
     local progressY = yPos + (height / 2) - 0.001
@@ -189,17 +191,17 @@ end)
 -- Draw the main taser interface
 local function drawTaserUI()
     if not showUI then return end
-    
+
     -- Calculate cooldown status
     local currentTime = GetGameTimer()
     local cooldownRemaining = math.max(0, cooldownEndTime - currentTime)
     local isOnCooldown = cooldownRemaining > 0
-    
+
     -- Get configuration
     local taserConfig = Config.UI.taser
     local themeConfig = Config.UI.theme
     local chargeConfig = taserConfig.chargeIndicator
-    
+
     -- Parse colors - Enhanced neon theme for weapon lock style
     local bgR, bgG, bgB, bgA = parseRgba("rgba(8, 12, 20, 245)")
     local accentR, accentG, accentB = hexToRgb("#00d4ff")
@@ -217,13 +219,13 @@ local function drawTaserUI()
     local reloadingR, reloadingG, reloadingB = hexToRgb("#ffcc00")
     local emptyR, emptyG, emptyB = hexToRgb("#ff4444")
     local cooldownR, cooldownG, cooldownB = hexToRgb("#00d4ff")
-    
+
     -- Calculate screen position - Right-center as requested
     local xPos = 0.925
     local yPos = 0.5
     local width = taserConfig.dimensions.width
     local height = taserConfig.dimensions.height
-    
+
     -- Keep reload progression in sync for visuals
     if isReloading then
         reloadProgress = math.min(1.0, (currentTime - reloadStartTime) / Config.ReloadTime)
@@ -294,6 +296,10 @@ local function drawTaserUI()
             stateText = "RELOADING"
             helperText = "INSERTING CARTRIDGE"
             stateR, stateG, stateB = reloadingR, reloadingG, reloadingB
+        elseif safetyOn then
+            stateText = "SAFE"
+            helperText = "SAFETY ENABLED"
+            stateR, stateG, stateB = cooldownR, cooldownG, cooldownB
         elseif taserCartridges <= 0 then
             stateText = "EMPTY"
             helperText = "PRESS R TO RELOAD"
@@ -325,7 +331,7 @@ local function drawTaserUI()
 
         -- Enhanced status capsule
         drawRect(centerTextX + 0.025, yPos + 0.011, 0.055, 0.016, statusBgR, statusBgG, statusBgB, statusBgA)
-        
+
         -- Status indicator bar with glow
         drawRect(centerTextX + 0.025, yPos + 0.011, 0.053, 0.003, stateR, stateG, stateB, 255)
         drawRect(centerTextX + 0.025, yPos + 0.011, 0.053, 0.005, stateR, stateG, stateB, 50)
@@ -340,7 +346,7 @@ local function drawTaserUI()
         DrawText(centerTextX + 0.025, yPos + 0.006)
 
         -- Timer with enhanced styling
-        if isOnCooldown and not isReloading then
+        if isOnCooldown and not isReloading and not safetyOn then
             SetTextFont(themeConfig.font)
             SetTextScale(0.22, 0.22)
             SetTextColour(timerR, timerG, timerB, timerA)
@@ -420,7 +426,7 @@ local function updateUI()
             return
         end
     end
-    
+
     showUI = true
 end
 
@@ -469,59 +475,72 @@ CreateThread(function()
         if weapon == Config.TaserWeapon then
             local currentTime = GetGameTimer()
             local cooldownRemaining = math.max(0, cooldownEndTime - currentTime)
-            
-            -- Disable firing if out of cartridges or on cooldown
-            if taserCartridges <= 0 or cooldownRemaining > 0 then
+
+            if Config.Safety and Config.Safety.enabled and IsControlJustReleased(0, Config.Safety.toggleKey) then
+                if currentTime - lastSafetyToggle >= (Config.Safety.toggleDebounce or 250) then
+                    safetyOn = not safetyOn
+                    lastSafetyToggle = currentTime
+                end
+            end
+
+            -- Disable firing if out of cartridges, on cooldown, reloading, or safety enabled
+            if taserCartridges <= 0 or cooldownRemaining > 0 or isReloading or safetyOn then
                 DisablePlayerFiring(ped, true)
             end
 
             -- Taser fire control
             if IsControlJustPressed(0, 24) then
-                if taserCartridges > 0 and cooldownRemaining == 0 then
+                if safetyOn then
+                    showNotification({
+                        title = "⚡ Safety",
+                        description = "Safety is ON (press [K])",
+                        type = "warning",
+                    })
+                elseif taserCartridges > 0 and cooldownRemaining == 0 then
                     -- Fire taser
                     taserCartridges = taserCartridges - 1
                     lastTase = currentTime
                     cooldownEndTime = currentTime + Config.TaserCooldown
-                    
+
                     -- Play sound effect
                     local coords = GetEntityCoords(ped)
                     PlaySoundFromCoord(-1, "ROCKET_REMOTE_YES", coords, "HUD_MINI_GAME_SOUNDSET", false, 0, false)
-                    
+
                     TriggerServerEvent('smarttaser:logTaser', taserCartridges)
 
                     -- Check if we hit a player
-                    local target = GetEntityPlayerIsFreeAimingAt(PlayerId())
-                    if DoesEntityExist(target) and IsPedAPlayer(target) then
+                    local hit, target = GetEntityPlayerIsFreeAimingAt(PlayerId())
+                    if hit and DoesEntityExist(target) and IsPedAPlayer(target) then
                         TriggerServerEvent("smarttaser:stunPlayer", GetPlayerServerId(NetworkGetPlayerIndexFromPed(target)))
-                        
+
                         if notifConfig.showOn.hit then
-                            showNotification({ 
-                                title = "⚡ Hit!", 
+                            showNotification({
+                                title = "⚡ Hit!",
                                 description = string.format("Target stunned! %s left", taserCartridges),
-                                type = "success", 
+                                type = "success",
                             })
                         end
                     else
                         if notifConfig.showOn.miss then
-                            showNotification({ 
-                                title = "⚡ Fired!", 
+                            showNotification({
+                                title = "⚡ Fired!",
                                 description = string.format("%s cart remaining", taserCartridges),
-                                type = "inform", 
+                                type = "inform",
                             })
                         end
                     end
                 elseif taserCartridges <= 0 then
-                    showNotification({ 
-                        title = "⚡ No Ammo", 
-                        description = "Press [R] to reload", 
-                        type = "error", 
+                    showNotification({
+                        title = "⚡ No Ammo",
+                        description = "Press [R] to reload",
+                        type = "error",
                     })
                 elseif cooldownRemaining > 0 then
                     if notifConfig.showOn.cooldown then
-                        showNotification({ 
-                            title = "⚡ Cooldown", 
-                            description = formatTime(cooldownRemaining), 
-                            type = "warning", 
+                        showNotification({
+                            title = "⚡ Cooldown",
+                            description = formatTime(cooldownRemaining),
+                            type = "warning",
                         })
                     end
                 end
@@ -529,8 +548,9 @@ CreateThread(function()
 
             -- Reload control
             if IsControlJustReleased(0, Config.ReloadKey) then
-                if isReloading then return end
-                TriggerServerEvent('smarttaser:checkCartridgeItem')
+                if not isReloading then
+                    TriggerServerEvent('smarttaser:checkCartridgeItem')
+                end
             end
         end
     end
@@ -544,7 +564,7 @@ end)
 RegisterNetEvent('smarttaser:reloadTaser')
 AddEventHandler('smarttaser:reloadTaser', function()
     if isReloading then return end
-    
+
     local ped = PlayerPedId()
     isReloading = true
     reloadStartTime = GetGameTimer()
@@ -554,7 +574,7 @@ AddEventHandler('smarttaser:reloadTaser', function()
     RequestAnimDict(Config.ReloadAnimation.dict)
     local timeout = 1000
     local startTime = GetGameTimer()
-    
+
     while not HasAnimDictLoaded(Config.ReloadAnimation.dict) do
         Wait(0)
         if GetGameTimer() - startTime > timeout then
@@ -568,16 +588,16 @@ AddEventHandler('smarttaser:reloadTaser', function()
     -- Play reload animation
     if HasAnimDictLoaded(Config.ReloadAnimation.dict) then
         TaskPlayAnim(
-            ped, 
-            Config.ReloadAnimation.dict, 
-            Config.ReloadAnimation.anim, 
-            8.0, 
-            -8.0, 
-            Config.ReloadTime, 
-            Config.ReloadAnimation.flags, 
-            0, 
-            false, 
-            false, 
+            ped,
+            Config.ReloadAnimation.dict,
+            Config.ReloadAnimation.anim,
+            8.0,
+            -8.0,
+            Config.ReloadTime,
+            Config.ReloadAnimation.flags,
+            0,
+            false,
+            false,
             false
         )
     end
@@ -589,18 +609,18 @@ AddEventHandler('smarttaser:reloadTaser', function()
     -- Wait for reload to complete
     Wait(Config.ReloadTime)
     ClearPedTasks(ped)
-    
+
     -- Reload complete
     taserCartridges = Config.MaxCartridges
     isReloading = false
-    
+
     TriggerServerEvent('smarttaser:reloadComplete')
-    
+
     if Config.UI.notifications.showOn.reload then
-        showNotification({ 
-            title = "⚡ Reloaded", 
+        showNotification({
+            title = "⚡ Reloaded",
             description = string.format("Ready to fire! %d cartridges", taserCartridges),
-            type = "success", 
+            type = "success",
         })
     end
 end)
@@ -609,10 +629,10 @@ end)
 RegisterNetEvent('smarttaser:applyStun')
 AddEventHandler('smarttaser:applyStun', function()
     local ped = PlayerPedId()
-    
+
     -- Play taser hit sound
     PlaySoundFromEntity(-1, "ROCKET_REMOTE_YES", ped, "HUD_MINI_GAME_SOUNDSET", false, 0)
-    
+
     -- Apply ragdoll effect
     SetPedToRagdoll(ped, Config.StunDuration, Config.StunDuration, 0, false, false, false)
 end)
@@ -621,6 +641,7 @@ end)
 CreateThread(function()
     Wait(1000)
     taserCartridges = Config.MaxCartridges
+    safetyOn = Config.Safety and Config.Safety.defaultOn or false
 end)
 
 -- ============================================
@@ -630,13 +651,13 @@ end)
 -- Test cooldown timer
 RegisterCommand('testtaser', function()
     TriggerEvent('chat:addMessage', {args = {"TASER", "Testing cooldown timer..."}})
-    
+
     local testStart = GetGameTimer()
     cooldownEndTime = testStart + Config.TaserCooldown
-    
+
     TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Cooldown set for %dms", Config.TaserCooldown)}})
     TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Start: %d, End: %d", testStart, cooldownEndTime)}})
-    
+
     -- Monitor timer progress
     local checkThread = CreateThread(function()
         for i = 1, math.ceil(Config.TaserCooldown / 1000) do

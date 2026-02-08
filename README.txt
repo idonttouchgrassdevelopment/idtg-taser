@@ -1,4 +1,4 @@
-This script adds a modular smart taser system with visual UI, reloading, cartridge control.
+This script adds a modular smart taser system with a clean UI, reloading, cartridge control, and a safety system.
 
 ---
 
@@ -17,30 +17,46 @@ In your `ox_inventory` item definitions (e.g., `shared/weapons.lua`), add:
 
 ```lua
 ['taser_cartridge'] = {
-			label = 'Taser Cartridge',
-			weight = 50,
-		},
+    label = 'Taser Cartridge',
+    weight = 50,
+},
 ```
-Replace your stungun item with this code
 
+Replace your stungun item with this:
+
+```lua
 ['WEAPON_STUNGUN'] = {
-			label = 'Tazer',
-			weight = 227,
-			durability = 0.1,
-			ammoname = 'taser_cartridge'
-		},
+    label = 'Tazer',
+    weight = 227,
+    durability = 0.1,
+    ammoname = 'taser_cartridge'
+},
+```
+
 ---
 
 ## ⚙️ Config Options
 
 In `config.lua`, you can set:
-- `Config.StunDuration` → Adjust how long players are stunned.
-- `Config.MaxCartridges` → Max taser shots before needing reload.
+- `Config.UI.layout` → set to `"minimal"` for version one clean UI.
+- `Config.StunDuration` → adjust how long players are stunned.
+- `Config.MaxCartridges` → max taser shots before needing reload.
+- `Config.Safety.enabled` → enable or disable the safety system.
+- `Config.Safety.defaultOn` → have safety on by default when players load in.
+- `Config.Safety.toggleKey` → key to toggle safety (default `K`).
+
+---
+
+## 🔒 Safety System
+
+- Safety blocks firing while enabled.
+- Toggle safety with **K** (default).
+- UI shows `SAFE` state when safety is on.
 
 ---
 
 ## 📌 Notes
 
-- Requires `ox_lib` and `ox_inventory`
-- Taser UI appears only when aiming
-- Animations and sounds included (you can swap them if you want)
+- Requires `ox_lib` and `ox_inventory`.
+- Taser UI appears only when aiming (if enabled in config).
+- Animations and sounds included (you can swap them if you want).
