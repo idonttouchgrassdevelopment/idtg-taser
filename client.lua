@@ -400,58 +400,6 @@ local function drawTaserUI()
             drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0075, accentR, accentG, accentB, 60)
         end
     end
-end            AddTextComponentString(formatTime(cooldownRemaining))
-            DrawText(centerTextX + 0.050, yPos + 0.005)
-        end
-    end
-
-    -- RIGHT SECTION: compact charge pods (ox_lib status pill vibe)
-    if taserConfig.elements.chargeIndicator then
-        local cellWidth = chargeConfig.cellWidth
-        local cellHeight = chargeConfig.cellHeight
-        local cellSpacing = chargeConfig.cellSpacing
-        local filledR, filledG, filledB = hexToRgb(chargeConfig.filledColor)
-        local emptyR, emptyG, emptyB = hexToRgb(chargeConfig.emptyColor)
-
-        local totalCellWidth = (Config.MaxCartridges * cellWidth) + ((Config.MaxCartridges - 1) * cellSpacing)
-        local cellStartX = xPos + halfW - 0.010 - totalCellWidth
-
-        for i = 1, Config.MaxCartridges do
-            local cellX = cellStartX + ((i - 1) * (cellWidth + cellSpacing)) + (cellWidth / 2)
-            local cellY = yPos
-            local active = i <= taserCartridges
-
-            local baseR = active and filledR or emptyR
-            local baseG = active and filledG or emptyG
-            local baseB = active and filledB or emptyB
-            local fillA = active and 230 or 80
-
-            -- Capsule glow and body
-            if active then
-                drawRect(cellX, cellY, cellWidth + 0.004, cellHeight + 0.004, baseR, baseG, baseB, 70)
-            end
-            drawRect(cellX, cellY, cellWidth, cellHeight, baseR, baseG, baseB, fillA)
-
-            -- highlight strip
-            if active then
-                drawRect(cellX - 0.0015, cellY - (cellHeight * 0.14), cellWidth * 0.45, cellHeight * 0.18, 255, 255, 255, 80)
-            end
-        end
-    end
-
-    -- Reload progress rail (subtle ox_lib progress style)
-    if isReloading then
-        local railWidth = width - 0.016
-        local railX = xPos
-        local railY = yPos + halfH + 0.007
-        local fillWidth = railWidth * reloadProgress
-
-        drawRect(railX, railY, railWidth, 0.0038, reloadRailR, reloadRailG, reloadRailB, reloadRailA)
-        if fillWidth > 0 then
-            drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0038, accentR, accentG, accentB, 240)
-            drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0068, accentR, accentG, accentB, 55)
-        end
-    end
 end
 
 -- ============================================
