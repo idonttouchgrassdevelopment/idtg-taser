@@ -46,7 +46,6 @@ local function parseRgba(color)
     return r, g, b, a
 end
 
--- Draw rectangle
 local function drawRect(x, y, width, height, r, g, b, a)
     DrawRect(x, y, width, height, r, g, b, a)
 end
@@ -239,208 +238,6 @@ local function drawTaserUI()
         safetyOn = safetyOn
     })
 
-    -- Get configuration
-    local taserConfig = Config.UI.taser
-    local themeConfig = Config.UI.theme
-    local chargeConfig = taserConfig.chargeIndicator
-
-    -- Parse colors - Enhanced neon theme for weapon lock style
-    local bgR, bgG, bgB, bgA = parseRgba("rgba(8, 12, 20, 245)")
-    local accentR, accentG, accentB = hexToRgb("#00d4ff")
-    local innerR, innerG, innerB, innerA = parseRgba("rgba(14, 20, 32, 240)")
-    local shadowR, shadowG, shadowB, shadowA = parseRgba("rgba(0, 0, 0, 150)")
-    local glowR, glowG, glowB, glowA = parseRgba("rgba(0, 212, 255, 30)")
-    local titleR, titleG, titleB, titleA = parseRgba("rgba(200, 235, 255, 255)")
-    local subtitleR, subtitleG, subtitleB, subtitleA = parseRgba("rgba(140, 175, 200, 220)")
-    local iconR, iconG, iconB, iconA = parseRgba("rgba(0, 212, 255, 255)")
-    local iconSubR, iconSubG, iconSubB, iconSubA = parseRgba("rgba(100, 150, 180, 200)")
-    local statusBgR, statusBgG, statusBgB, statusBgA = parseRgba("rgba(10, 16, 26, 240)")
-    local timerR, timerG, timerB, timerA = parseRgba("rgba(180, 220, 255, 255)")
-    local reloadRailR, reloadRailG, reloadRailB, reloadRailA = parseRgba("rgba(20, 28, 40, 230)")
-    local readyR, readyG, readyB = hexToRgb("#00ff88")
-    local reloadingR, reloadingG, reloadingB = hexToRgb("#ffcc00")
-    local emptyR, emptyG, emptyB = hexToRgb("#ff4444")
-    local cooldownR, cooldownG, cooldownB = hexToRgb("#00d4ff")
-
-    -- Calculate screen position - Right-center as requested
-    local xPos = 0.925
-    local yPos = 0.5
-    local width = taserConfig.dimensions.width
-    local height = taserConfig.dimensions.height
-
-    local halfW = width / 2
-    local halfH = height / 2
-
-    -- Enhanced glow effect with layered shadows
-    drawRect(xPos + 0.003, yPos + 0.003, width + 0.008, height + 0.008, accentR, accentG, accentB, 25)
-    drawRect(xPos, yPos + 0.003, width + 0.004, height + 0.004, shadowR, shadowG, shadowB, shadowA)
-    drawRect(xPos, yPos, width, height, bgR, bgG, bgB, bgA)
-    drawRect(xPos, yPos, width - 0.003, height - 0.006, innerR, innerG, innerB, innerA)
-
-    -- Top accent bar with gradient effect
-    drawRect(xPos, yPos - halfH + 0.0015, width - 0.003, 0.0028, accentR, accentG, accentB, 255)
-    drawRect(xPos, yPos - halfH + 0.0015, width - 0.003, 0.006, accentR, accentG, accentB, 60)
-
-    -- Zone widths
-    local leftZoneWidth = 0.035
-    local rightZoneWidth = 0.068
-    local centerZoneWidth = width - leftZoneWidth - rightZoneWidth - 0.015
-
-    -- Enhanced dividers with glow
-    drawRect(xPos - halfW + leftZoneWidth, yPos, 0.0015, height - 0.012, accentR, accentG, accentB, 120)
-    drawRect(xPos - halfW + leftZoneWidth, yPos, 0.003, height - 0.012, accentR, accentG, accentB, 40)
-    drawRect(xPos + halfW - rightZoneWidth, yPos, 0.0015, height - 0.012, accentR, accentG, accentB, 120)
-    drawRect(xPos + halfW - rightZoneWidth, yPos, 0.003, height - 0.012, accentR, accentG, accentB, 40)
-
-    -- LEFT SECTION: Enhanced icon block with glow
-    if taserConfig.elements.icon then
-        local boltY = yPos - 0.012
-
-        -- Icon glow effect
-        drawRect(xPos - halfW + 0.016, boltY, 0.028, 0.028, accentR, accentG, accentB, 40)
-
-        SetTextFont(themeConfig.font)
-        SetTextScale(0.46, 0.46)
-        SetTextColour(iconR, iconG, iconB, iconA)
-        SetTextCentre(true)
-        SetTextDropshadow(2, 0, 0, 0, 180)
-        SetTextOutline()
-        SetTextEntry("STRING")
-        AddTextComponentString("⚡")
-        DrawText(xPos - halfW + 0.016, boltY)
-
-        SetTextFont(themeConfig.font)
-        SetTextScale(0.18, 0.18)
-        SetTextColour(iconSubR, iconSubG, iconSubB, iconSubA)
-        SetTextCentre(true)
-        SetTextDropshadow(1, 0, 0, 0, 150)
-        SetTextEntry("STRING")
-        AddTextComponentString("26")
-        DrawText(xPos - halfW + 0.016, boltY + 0.020)
-    end
-
-    -- CENTER SECTION: Enhanced status display
-    if taserConfig.elements.label then
-        local centerTextX = xPos - (centerZoneWidth / 2) + 0.060
-        local titleText = "SMART TASER"
-        local stateText = "READY"
-        local stateR, stateG, stateB = readyR, readyG, readyB
-        local helperText = "SYSTEM ACTIVE"
-
-        if isReloading then
-            stateText = "RELOADING"
-            helperText = "INSERTING CARTRIDGE"
-            stateR, stateG, stateB = reloadingR, reloadingG, reloadingB
-        elseif safetyOn then
-            stateText = "SAFE"
-            helperText = "SAFETY ENABLED"
-            stateR, stateG, stateB = cooldownR, cooldownG, cooldownB
-        elseif taserCartridges <= 0 then
-            stateText = "EMPTY"
-            helperText = "PRESS R TO RELOAD"
-            stateR, stateG, stateB = emptyR, emptyG, emptyB
-        elseif isOnCooldown then
-            stateText = "CHARGING"
-            helperText = "CAPACITOR RECHARGING"
-            stateR, stateG, stateB = cooldownR, cooldownG, cooldownB
-        end
-
-        -- Title with glow
-        SetTextFont(themeConfig.font)
-        SetTextScale(0.32, 0.32)
-        SetTextColour(titleR, titleG, titleB, titleA)
-        SetTextCentre(false)
-        SetTextDropshadow(1, 0, 0, 0, 180)
-        SetTextEntry("STRING")
-        AddTextComponentString(titleText)
-        DrawText(centerTextX - 0.040, yPos - 0.015)
-
-        -- Subtitle
-        SetTextFont(themeConfig.font)
-        SetTextScale(0.21, 0.21)
-        SetTextColour(subtitleR, subtitleG, subtitleB, subtitleA)
-        SetTextCentre(false)
-        SetTextEntry("STRING")
-        AddTextComponentString(helperText)
-        DrawText(centerTextX - 0.040, yPos + 0.004)
-
-        -- Enhanced status capsule
-        drawRect(centerTextX + 0.025, yPos + 0.011, 0.055, 0.016, statusBgR, statusBgG, statusBgB, statusBgA)
-
-        -- Status indicator bar with glow
-        drawRect(centerTextX + 0.025, yPos + 0.011, 0.053, 0.003, stateR, stateG, stateB, 255)
-        drawRect(centerTextX + 0.025, yPos + 0.011, 0.053, 0.005, stateR, stateG, stateB, 50)
-
-        SetTextFont(themeConfig.font)
-        SetTextScale(0.24, 0.24)
-        SetTextColour(stateR, stateG, stateB, 255)
-        SetTextCentre(true)
-        SetTextDropshadow(1, 0, 0, 0, 150)
-        SetTextEntry("STRING")
-        AddTextComponentString(stateText)
-        DrawText(centerTextX + 0.025, yPos + 0.006)
-
-        -- Timer with enhanced styling
-        if isOnCooldown and not isReloading and not safetyOn then
-            SetTextFont(themeConfig.font)
-            SetTextScale(0.22, 0.22)
-            SetTextColour(timerR, timerG, timerB, timerA)
-            SetTextCentre(true)
-            SetTextDropshadow(1, 0, 0, 0, 160)
-            SetTextEntry("STRING")
-            AddTextComponentString(formatTime(cooldownRemaining))
-            DrawText(centerTextX + 0.058, yPos + 0.006)
-        end
-    end
-
-    -- RIGHT SECTION: Enhanced charge indicator
-    if taserConfig.elements.chargeIndicator then
-        local cellWidth = chargeConfig.cellWidth
-        local cellHeight = chargeConfig.cellHeight
-        local cellSpacing = chargeConfig.cellSpacing
-        local filledR, filledG, filledB = hexToRgb(chargeConfig.filledColor)
-        local emptyR, emptyG, emptyB = hexToRgb(chargeConfig.emptyColor)
-
-        local totalCellWidth = (Config.MaxCartridges * cellWidth) + ((Config.MaxCartridges - 1) * cellSpacing)
-        local cellStartX = xPos + halfW - 0.012 - totalCellWidth
-
-        for i = 1, Config.MaxCartridges do
-            local cellX = cellStartX + ((i - 1) * (cellWidth + cellSpacing)) + (cellWidth / 2)
-            local cellY = yPos
-            local active = i <= taserCartridges
-
-            local baseR = active and filledR or emptyR
-            local baseG = active and filledG or emptyG
-            local baseB = active and filledB or emptyB
-            local fillA = active and 245 or 60
-
-            -- Enhanced glow effect for active cells
-            if active then
-                drawRect(cellX, cellY, cellWidth + 0.005, cellHeight + 0.005, baseR, baseG, baseB, 80)
-                drawRect(cellX, cellY, cellWidth + 0.008, cellHeight + 0.008, baseR, baseG, baseB, 30)
-            end
-            drawRect(cellX, cellY, cellWidth, cellHeight, baseR, baseG, baseB, fillA)
-
-            -- Enhanced highlight strip
-            if active then
-                drawRect(cellX - 0.0018, cellY - (cellHeight * 0.16), cellWidth * 0.48, cellHeight * 0.20, 255, 255, 255, 100)
-            end
-        end
-    end
-
-    -- Enhanced reload progress rail
-    if isReloading then
-        local railWidth = width - 0.020
-        local railX = xPos
-        local railY = yPos + halfH + 0.009
-        local fillWidth = railWidth * reloadProgress
-
-        drawRect(railX, railY, railWidth, 0.0042, reloadRailR, reloadRailG, reloadRailB, reloadRailA)
-        if fillWidth > 0 then
-            drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0042, accentR, accentG, accentB, 255)
-            drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0075, accentR, accentG, accentB, 60)
-        end
-    end
 end
 
 -- ============================================
@@ -496,6 +293,40 @@ CreateThread(function()
     end
 end)
 
+local function getSafetyBindLabel()
+    if not (Config.Safety and Config.Safety.keybind) then
+        return 'K'
+    end
+
+    return string.upper(tostring(Config.Safety.keybind))
+end
+
+local function toggleSafetyState()
+    if not (Config.Safety and Config.Safety.enabled) then return end
+
+    local ped = PlayerPedId()
+    if GetSelectedPedWeapon(ped) ~= Config.TaserWeapon then return end
+
+    local currentTime = GetGameTimer()
+    if currentTime - lastSafetyToggle < (Config.Safety.toggleDebounce or 250) then return end
+
+    safetyOn = not safetyOn
+    lastSafetyToggle = currentTime
+end
+
+RegisterCommand('smarttaser:toggleSafety', function()
+    toggleSafetyState()
+end, false)
+
+if Config.Safety and Config.Safety.enabled then
+    RegisterKeyMapping(
+        'smarttaser:toggleSafety',
+        'Toggle Smart Taser Safety',
+        'keyboard',
+        Config.Safety.keybind or 'k'
+    )
+end
+
 -- ============================================
 -- MAIN CONTROL THREAD
 -- ============================================
@@ -511,13 +342,6 @@ CreateThread(function()
             local currentTime = GetGameTimer()
             local cooldownRemaining = math.max(0, cooldownEndTime - currentTime)
 
-            if Config.Safety and Config.Safety.enabled and IsControlJustReleased(0, Config.Safety.toggleKey) then
-                if currentTime - lastSafetyToggle >= (Config.Safety.toggleDebounce or 250) then
-                    safetyOn = not safetyOn
-                    lastSafetyToggle = currentTime
-                end
-            end
-
             -- Disable firing if out of cartridges, on cooldown, reloading, or safety enabled
             if taserCartridges <= 0 or cooldownRemaining > 0 or isReloading or safetyOn then
                 DisablePlayerFiring(ped, true)
@@ -528,7 +352,7 @@ CreateThread(function()
                 if safetyOn then
                     showNotification({
                         title = "⚡ Safety",
-                        description = "Safety is ON (press [K])",
+                        description = "Safety is ON (press [" .. getSafetyBindLabel() .. "])",
                         type = "warning",
                     })
                 elseif taserCartridges > 0 and cooldownRemaining == 0 then

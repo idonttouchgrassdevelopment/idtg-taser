@@ -34,6 +34,7 @@ Config.Safety = {
     enabled = true,             -- Enable manual taser safety
     defaultOn = true,           -- Safety starts ON when resource/player loads
     toggleKey = 311,            -- K key (FiveM control index)
+    keybind = 'k',              -- Keyboard key mapping for rebinding in FiveM settings
     toggleDebounce = 250,       -- Prevent rapid toggling (ms)
 }
 
