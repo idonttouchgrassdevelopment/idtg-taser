@@ -29,6 +29,14 @@ Config.ReloadAnimation = {
     flags = 48
 }
 
+-- Safety System Configuration
+Config.Safety = {
+    enabled = true,             -- Enable manual taser safety
+    defaultOn = true,           -- Safety starts ON when resource/player loads
+    toggleKey = 311,            -- K key (FiveM control index)
+    toggleDebounce = 250,       -- Prevent rapid toggling (ms)
+}
+
 -- Alternative animation presets you can use:
 -- AP Pistol: dict = "anim@weapons@pistol@machine_str", anim = "reload_aim"
 -- Pistol: dict = "weapons@pistol@reload", anim = "reload_aim"
@@ -41,7 +49,7 @@ Config.UI = {
     -- compact: Shows icon, cartridges, status, cooldown timer
     -- minimal: Only icon and cartridges/status (0.06×0.04)
     -- detailed: Legacy detailed view with all info
-    layout = "compact",
+    layout = "minimal",
     
     -- Main taser UI positioning
     taser = {
