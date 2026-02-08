@@ -110,12 +110,26 @@ Config.UI = {
         font = 4,                    -- Font ID (0-7 available in GTA5)
         
         colors = {
-            background = "rgba(10, 14, 24, 240)",    -- Dark navy glass background
+            background = "rgba(10, 14, 24, 240)",    -- Main panel body
+            panelInner = "rgba(16, 21, 30, 228)",    -- Inner panel inset
+            shadow = "rgba(0, 0, 0, 130)",           -- Panel shadow
+            divider = "rgba(94, 106, 124, 140)",     -- Vertical separators
             text = "#ffffff",
-            accent = "#30e6ff",       -- Clean cyan accent
-            success = "#00ff88",      -- Bright neon green-cyan
-            warning = "#ffaa00",      -- Warm orange
-            error = "#ff4466",        -- Neon pink/red
+            accent = "#30e6ff",                      -- Top strip + reload fill
+            title = "rgba(220, 236, 255, 245)",      -- Header text
+            subtitle = "rgba(130, 152, 181, 230)",   -- Helper text
+            icon = "rgba(214, 243, 255, 255)",       -- Bolt icon color
+            iconSubtext = "rgba(138, 160, 190, 210)",-- Bolt subtext color
+            statusBackground = "rgba(12, 18, 28, 230)", -- Status capsule background
+            timerText = "rgba(188, 212, 242, 230)",  -- Cooldown timer text
+            reloadRail = "rgba(22, 30, 44, 215)",    -- Reload rail background
+            ready = "#7bf2a9",                       -- Ready status
+            reloading = "#ffc652",                   -- Reloading status
+            empty = "#ff6470",                       -- Empty status
+            cooldown = "#78cdff",                    -- Cooldown status
+            success = "#00ff88",
+            warning = "#ffaa00",
+            error = "#ff4466",
         },
         
         -- Typography

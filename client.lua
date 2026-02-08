@@ -203,6 +203,20 @@ local function drawTaserUI()
     -- Parse colors
     local bgR, bgG, bgB, bgA = parseRgba(themeConfig.colors.background)
     local accentR, accentG, accentB = hexToRgb(themeConfig.colors.accent)
+    local innerR, innerG, innerB, innerA = parseRgba(themeConfig.colors.panelInner or "rgba(16, 21, 30, 228)")
+    local shadowR, shadowG, shadowB, shadowA = parseRgba(themeConfig.colors.shadow or "rgba(0, 0, 0, 130)")
+    local dividerR, dividerG, dividerB, dividerA = parseRgba(themeConfig.colors.divider or "rgba(94, 106, 124, 140)")
+    local titleR, titleG, titleB, titleA = parseRgba(themeConfig.colors.title or "rgba(220, 236, 255, 245)")
+    local subtitleR, subtitleG, subtitleB, subtitleA = parseRgba(themeConfig.colors.subtitle or "rgba(130, 152, 181, 230)")
+    local iconR, iconG, iconB, iconA = parseRgba(themeConfig.colors.icon or "rgba(214, 243, 255, 255)")
+    local iconSubR, iconSubG, iconSubB, iconSubA = parseRgba(themeConfig.colors.iconSubtext or "rgba(138, 160, 190, 210)")
+    local statusBgR, statusBgG, statusBgB, statusBgA = parseRgba(themeConfig.colors.statusBackground or "rgba(12, 18, 28, 230)")
+    local timerR, timerG, timerB, timerA = parseRgba(themeConfig.colors.timerText or "rgba(188, 212, 242, 230)")
+    local reloadRailR, reloadRailG, reloadRailB, reloadRailA = parseRgba(themeConfig.colors.reloadRail or "rgba(22, 30, 44, 215)")
+    local readyR, readyG, readyB = hexToRgb(themeConfig.colors.ready or "#7bf2a9")
+    local reloadingR, reloadingG, reloadingB = hexToRgb(themeConfig.colors.reloading or "#ffc652")
+    local emptyR, emptyG, emptyB = hexToRgb(themeConfig.colors.empty or "#ff6470")
+    local cooldownR, cooldownG, cooldownB = hexToRgb(themeConfig.colors.cooldown or "#78cdff")
     
     -- Calculate screen position
     local xPos = 0.5
@@ -248,9 +262,9 @@ local function drawTaserUI()
     local halfH = height / 2
 
     -- Background shell (soft shadow + body)
-    drawRect(xPos, yPos + 0.004, width + 0.010, height + 0.010, 0, 0, 0, 130)
+    drawRect(xPos, yPos + 0.004, width + 0.010, height + 0.010, shadowR, shadowG, shadowB, shadowA)
     drawRect(xPos, yPos, width, height, bgR, bgG, bgB, bgA)
-    drawRect(xPos, yPos, width - 0.004, height - 0.007, 16, 21, 30, 228)
+    drawRect(xPos, yPos, width - 0.004, height - 0.007, innerR, innerG, innerB, innerA)
 
     -- ox_lib style top strip
     drawRect(xPos, yPos - halfH + 0.0012, width - 0.004, 0.0024, accentR, accentG, accentB, 240)
@@ -260,8 +274,8 @@ local function drawTaserUI()
     local rightZoneWidth = 0.058
     local centerZoneWidth = width - leftZoneWidth - rightZoneWidth - 0.012
 
-    drawRect(xPos - halfW + leftZoneWidth, yPos, 0.0012, height - 0.010, 94, 106, 124, 140)
-    drawRect(xPos + halfW - rightZoneWidth, yPos, 0.0012, height - 0.010, 94, 106, 124, 140)
+    drawRect(xPos - halfW + leftZoneWidth, yPos, 0.0012, height - 0.010, dividerR, dividerG, dividerB, dividerA)
+    drawRect(xPos + halfW - rightZoneWidth, yPos, 0.0012, height - 0.010, dividerR, dividerG, dividerB, dividerA)
 
     -- LEFT SECTION: simple icon block
     if taserConfig.elements.icon then
@@ -269,7 +283,7 @@ local function drawTaserUI()
 
         SetTextFont(themeConfig.font)
         SetTextScale(0.42, 0.42)
-        SetTextColour(214, 243, 255, 255)
+        SetTextColour(iconR, iconG, iconB, iconA)
         SetTextCentre(true)
         SetTextDropshadow(2, 0, 0, 0, 180)
         SetTextEntry("STRING")
@@ -278,7 +292,7 @@ local function drawTaserUI()
 
         SetTextFont(themeConfig.font)
         SetTextScale(0.20, 0.20)
-        SetTextColour(138, 160, 190, 210)
+        SetTextColour(iconSubR, iconSubG, iconSubB, iconSubA)
         SetTextCentre(true)
         SetTextDropshadow(1, 0, 0, 0, 150)
         SetTextEntry("STRING")
@@ -291,26 +305,26 @@ local function drawTaserUI()
         local centerTextX = xPos - (centerZoneWidth / 2) + 0.055
         local titleText = "TASER CONTROL"
         local stateText = "READY"
-        local stateR, stateG, stateB = 123, 242, 169
+        local stateR, stateG, stateB = readyR, readyG, readyB
         local helperText = "SAFE"
 
         if isReloading then
             stateText = "RELOADING"
             helperText = "INSERTING CART"
-            stateR, stateG, stateB = 255, 198, 82
+            stateR, stateG, stateB = reloadingR, reloadingG, reloadingB
         elseif taserCartridges <= 0 then
             stateText = "EMPTY"
             helperText = "PRESS R"
-            stateR, stateG, stateB = 255, 100, 112
+            stateR, stateG, stateB = emptyR, emptyG, emptyB
         elseif isOnCooldown then
             stateText = "CHARGING"
             helperText = "CAPACITOR"
-            stateR, stateG, stateB = 120, 205, 255
+            stateR, stateG, stateB = cooldownR, cooldownG, cooldownB
         end
 
         SetTextFont(themeConfig.font)
         SetTextScale(0.29, 0.29)
-        SetTextColour(220, 236, 255, 245)
+        SetTextColour(titleR, titleG, titleB, titleA)
         SetTextCentre(false)
         SetTextDropshadow(1, 0, 0, 0, 160)
         SetTextEntry("STRING")
@@ -319,13 +333,13 @@ local function drawTaserUI()
 
         SetTextFont(themeConfig.font)
         SetTextScale(0.22, 0.22)
-        SetTextColour(130, 152, 181, 230)
+        SetTextColour(subtitleR, subtitleG, subtitleB, subtitleA)
         SetTextCentre(false)
         SetTextEntry("STRING")
         AddTextComponentString(helperText)
         DrawText(centerTextX - 0.035, yPos + 0.002)
 
-        drawRect(centerTextX + 0.021, yPos + 0.010, 0.050, 0.014, 12, 18, 28, 230)
+        drawRect(centerTextX + 0.021, yPos + 0.010, 0.050, 0.014, statusBgR, statusBgG, statusBgB, statusBgA)
         drawRect(centerTextX + 0.021, yPos + 0.0033, 0.049, 0.0012, stateR, stateG, stateB, 240)
 
         SetTextFont(themeConfig.font)
@@ -339,7 +353,7 @@ local function drawTaserUI()
         if isOnCooldown and not isReloading then
             SetTextFont(themeConfig.font)
             SetTextScale(0.20, 0.20)
-            SetTextColour(188, 212, 242, 230)
+            SetTextColour(timerR, timerG, timerB, timerA)
             SetTextCentre(true)
             SetTextEntry("STRING")
             AddTextComponentString(formatTime(cooldownRemaining))
@@ -388,7 +402,7 @@ local function drawTaserUI()
         local railY = yPos + halfH + 0.007
         local fillWidth = railWidth * reloadProgress
 
-        drawRect(railX, railY, railWidth, 0.0038, 22, 30, 44, 215)
+        drawRect(railX, railY, railWidth, 0.0038, reloadRailR, reloadRailG, reloadRailB, reloadRailA)
         if fillWidth > 0 then
             drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0038, accentR, accentG, accentB, 240)
             drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0068, accentR, accentG, accentB, 55)
