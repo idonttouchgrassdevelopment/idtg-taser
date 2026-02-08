@@ -1,84 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IDTG Taser UI - Ox Lib Style</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Taser V1</title>
     <style>
         :root {
-            color-scheme: dark;
-            --ox-bg: rgba(18, 18, 20, 0.95);
-            --ox-surface: rgba(26, 26, 29, 0.94);
-            --ox-border: rgba(255, 255, 255, 0.07);
-            --ox-text: #efefef;
-            --ox-muted: #9fa1a6;
-            --ox-success: #8fe388;
-            --ox-warning: #f8d66d;
-            --ox-danger: #f18282;
+            --ox-bg: rgba(11, 16, 24, 0.9);
+            --ox-surface: rgba(17, 24, 35, 0.9);
+            --ox-border: rgba(117, 135, 161, 0.3);
             --ox-primary: #6ca9ff;
+            --ox-success: #8fe388;
+            --ox-warning: #ffd166;
+            --ox-danger: #ff7d7d;
+            --ox-muted: #96a8be;
+            --ox-text: #ecf3ff;
         }
 
-        * {
+        * { box-sizing: border-box; user-select: none; }
+        html, body {
             margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 4.5vw;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
-            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: radial-gradient(circle at 30% 40%, #1f2025, #131418 52%, #0e0f12);
-            color: var(--ox-text);
+            background: transparent;
+            font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            pointer-events: none;
         }
 
         .hud-wrap {
-            width: 320px;
+            position: fixed;
+            right: 2.2vw;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 290px;
+            border-radius: 14px;
             border: 1px solid var(--ox-border);
-            border-radius: 12px;
+            background: linear-gradient(170deg, var(--ox-bg), rgba(8, 12, 19, 0.88));
+            color: var(--ox-text);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
             overflow: hidden;
-            background: var(--ox-bg);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(8px);
+            display: none;
         }
 
         .hud-header {
-            padding: 0.75rem 0.95rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+            padding: 0.72rem 0.95rem;
             border-bottom: 1px solid var(--ox-border);
         }
 
-        .hud-title {
-            font-size: 0.84rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-weight: 700;
-        }
+        .hud-title { margin: 0; font-size: 0.84rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+        .hud-chip { font-size: 0.72rem; color: var(--ox-muted); background: rgba(255, 255, 255, 0.04); border: 1px solid var(--ox-border); padding: 0.2rem 0.5rem; border-radius: 999px; }
 
-        .hud-chip {
-            font-size: 0.72rem;
-            color: var(--ox-muted);
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--ox-border);
-            padding: 0.2rem 0.5rem;
-            border-radius: 999px;
-        }
-
-        .hud-body {
-            display: grid;
-            grid-template-columns: 68px 1fr;
-            gap: 0.8rem;
-            padding: 0.95rem;
-            background: var(--ox-surface);
-        }
-
+        .hud-body { display: grid; grid-template-columns: 68px 1fr; gap: 0.8rem; padding: 0.95rem; background: var(--ox-surface); }
         .taser-icon {
             height: 68px;
             border: 1px solid var(--ox-border);
@@ -90,30 +66,10 @@
             background: rgba(108, 169, 255, 0.08);
         }
 
-        .status-panel {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 0.45rem;
-        }
-
-        .status-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-        }
-
-        .status-name {
-            font-weight: 700;
-            font-size: 0.93rem;
-            letter-spacing: 0.03em;
-        }
-
-        .status-time {
-            font-size: 0.76rem;
-            color: var(--ox-muted);
-            font-variant-numeric: tabular-nums;
-        }
+        .status-panel { display: flex; flex-direction: column; justify-content: center; gap: 0.45rem; }
+        .status-top { display: flex; justify-content: space-between; align-items: baseline; }
+        .status-name { margin: 0; font-weight: 700; font-size: 0.93rem; letter-spacing: 0.03em; }
+        .status-time { margin: 0; font-size: 0.76rem; color: var(--ox-muted); font-variant-numeric: tabular-nums; }
 
         .status-pill {
             width: fit-content;
@@ -128,58 +84,21 @@
             font-weight: 700;
         }
 
-        .bar-wrap {
-            margin-top: 0.2rem;
-            height: 7px;
-            border-radius: 99px;
-            background: rgba(255, 255, 255, 0.06);
-            overflow: hidden;
-        }
+        .bar-wrap { margin-top: 0.2rem; height: 7px; border-radius: 99px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+        .bar { height: 100%; width: 100%; border-radius: inherit; background: linear-gradient(90deg, #6ca9ff, #91dd8b); transition: width 90ms linear; }
 
-        .bar {
-            height: 100%;
-            width: 55%;
-            border-radius: inherit;
-            background: linear-gradient(90deg, #6ca9ff, #91dd8b);
-        }
-
-        .hud-footer {
-            padding: 0.75rem 0.95rem;
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 0.4rem;
-            border-top: 1px solid var(--ox-border);
-            background: rgba(0, 0, 0, 0.12);
-        }
-
-        .stat {
-            border: 1px solid var(--ox-border);
-            border-radius: 8px;
-            padding: 0.45rem 0.5rem;
-            background: rgba(255, 255, 255, 0.02);
-            text-align: center;
-        }
-
-        .stat-label {
-            display: block;
-            font-size: 0.63rem;
-            color: var(--ox-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 0.25rem;
-        }
-
-        .stat-value {
-            font-size: 0.86rem;
-            font-weight: 700;
-        }
+        .hud-footer { padding: 0.75rem 0.95rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; border-top: 1px solid var(--ox-border); background: rgba(0, 0, 0, 0.12); }
+        .stat { border: 1px solid var(--ox-border); border-radius: 8px; padding: 0.45rem 0.5rem; background: rgba(255, 255, 255, 0.02); text-align: center; }
+        .stat-label { display: block; font-size: 0.63rem; color: var(--ox-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.25rem; }
+        .stat-value { font-size: 0.86rem; font-weight: 700; }
 
         .warning { color: var(--ox-warning); }
         .danger { color: var(--ox-danger); }
+        .safe { color: var(--ox-success); }
     </style>
 </head>
 <body>
-    <section class="hud-wrap" aria-label="Taser status">
+    <section class="hud-wrap" id="hud" aria-label="Taser status">
         <header class="hud-header">
             <p class="hud-title">Taser Control</p>
             <span class="hud-chip">X26</span>
@@ -189,30 +108,75 @@
             <div class="taser-icon">⚡</div>
             <div class="status-panel">
                 <div class="status-top">
-                    <p class="status-name">Operational</p>
-                    <p class="status-time">Cooldown: 1.2s</p>
+                    <p class="status-name" id="statusName">Operational</p>
+                    <p class="status-time" id="statusTime">Cooldown: --</p>
                 </div>
-                <p class="status-pill">Ready</p>
-                <div class="bar-wrap">
-                    <div class="bar"></div>
-                </div>
+                <p class="status-pill" id="statusPill">Ready</p>
+                <div class="bar-wrap"><div class="bar" id="chargeBar"></div></div>
             </div>
         </div>
 
         <footer class="hud-footer">
-            <div class="stat">
-                <span class="stat-label">Cartridges</span>
-                <span class="stat-value">2 / 2</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Charge</span>
-                <span class="stat-value warning">73%</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Safety</span>
-                <span class="stat-value danger">Off</span>
-            </div>
+            <div class="stat"><span class="stat-label">Cartridges</span><span class="stat-value" id="cart">0 / 0</span></div>
+            <div class="stat"><span class="stat-label">Charge</span><span class="stat-value warning" id="charge">0%</span></div>
+            <div class="stat"><span class="stat-label">Safety</span><span class="stat-value" id="safety">Off</span></div>
         </footer>
     </section>
+
+    <script>
+        const hud = document.getElementById('hud');
+        const statusName = document.getElementById('statusName');
+        const statusTime = document.getElementById('statusTime');
+        const statusPill = document.getElementById('statusPill');
+        const chargeBar = document.getElementById('chargeBar');
+        const cart = document.getElementById('cart');
+        const charge = document.getElementById('charge');
+        const safety = document.getElementById('safety');
+
+        function setStatusTheme(status) {
+            const lowered = String(status || '').toLowerCase();
+            if (lowered === 'ready') {
+                statusPill.style.color = 'var(--ox-success)';
+                statusPill.style.borderColor = 'rgba(143,227,136,.45)';
+                statusPill.style.background = 'rgba(143,227,136,.14)';
+            } else if (lowered === 'safe' || lowered === 'charging') {
+                statusPill.style.color = 'var(--ox-warning)';
+                statusPill.style.borderColor = 'rgba(255,209,102,.45)';
+                statusPill.style.background = 'rgba(255,209,102,.14)';
+            } else {
+                statusPill.style.color = 'var(--ox-danger)';
+                statusPill.style.borderColor = 'rgba(255,125,125,.45)';
+                statusPill.style.background = 'rgba(255,125,125,.14)';
+            }
+        }
+
+        window.addEventListener('message', (event) => {
+            const data = event.data || {};
+
+            if (data.action === 'setVisible') {
+                hud.style.display = data.visible ? 'block' : 'none';
+                return;
+            }
+
+            if (data.action !== 'update') return;
+
+            const max = Number(data.maxCartridges || 0);
+            const current = Number(data.cartridges || 0);
+            const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((current / max) * 100))) : 0;
+
+            statusName.textContent = data.ready ? 'Operational' : 'System Active';
+            statusTime.textContent = data.showCooldown ? `Cooldown: ${data.cooldownText || '--'}` : 'Cooldown: Ready';
+            statusPill.textContent = data.status || 'Ready';
+            setStatusTheme(data.status);
+
+            chargeBar.style.width = `${pct}%`;
+            cart.textContent = `${current} / ${max}`;
+            charge.textContent = `${pct}%`;
+            charge.className = `stat-value ${pct < 30 ? 'danger' : 'warning'}`;
+
+            safety.textContent = data.safetyOn ? 'On' : 'Off';
+            safety.className = `stat-value ${data.safetyOn ? 'safe' : 'danger'}`;
+        });
+    </script>
 </body>
 </html>

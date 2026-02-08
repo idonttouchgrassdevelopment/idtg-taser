@@ -11,6 +11,7 @@ local reloadStartTime = 0
 local reloadProgress = 0
 local safetyOn = Config.Safety and Config.Safety.defaultOn or false
 local lastSafetyToggle = 0
+local nuiVisible = false
 
 -- ============================================
 -- UTILITY FUNCTIONS
@@ -190,7 +191,55 @@ end)
 
 -- Draw the main taser interface
 local function drawTaserUI()
-    if not showUI then return end
+    local currentTime = GetGameTimer()
+    local cooldownRemaining = math.max(0, cooldownEndTime - currentTime)
+    local isOnCooldown = cooldownRemaining > 0
+
+    if isReloading then
+        reloadProgress = math.min(1.0, (currentTime - reloadStartTime) / Config.ReloadTime)
+    else
+        reloadProgress = 0
+    end
+
+    if not showUI then
+        if nuiVisible then
+            SendNUIMessage({ action = 'setVisible', visible = false })
+            nuiVisible = false
+        end
+        return
+    end
+
+    if not nuiVisible then
+        SendNUIMessage({ action = 'setVisible', visible = true })
+        nuiVisible = true
+    end
+
+    local status = 'Ready'
+    if isReloading then
+        status = 'Reloading'
+    elseif safetyOn then
+        status = 'Safe'
+    elseif taserCartridges <= 0 then
+        status = 'Empty'
+    elseif isOnCooldown then
+        status = 'Charging'
+    end
+
+    SendNUIMessage({
+        action = 'update',
+        cartridges = taserCartridges,
+        maxCartridges = Config.MaxCartridges,
+        cooldown = cooldownRemaining,
+        cooldownText = formatTime(cooldownRemaining),
+        showCooldown = isOnCooldown and not isReloading and not safetyOn,
+        status = status,
+        ready = (not isReloading and not safetyOn and taserCartridges > 0 and not isOnCooldown),
+        isReloading = isReloading,
+        reloadProgress = reloadProgress,
+        safetyOn = safetyOn
+    })
+
+    return
 
     -- Calculate cooldown status
     local currentTime = GetGameTimer()
@@ -679,4 +728,11 @@ RegisterCommand('taserconfig', function()
     TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Max Cartridges: %d", Config.MaxCartridges)}})
     TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Stun Duration: %dms", Config.StunDuration)}})
     TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Layout: %s", Config.UI.layout)}})
+end)
+
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName == GetCurrentResourceName() then
+        SendNUIMessage({ action = 'setVisible', visible = false })
+    end
 end)
