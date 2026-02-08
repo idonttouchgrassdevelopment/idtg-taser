@@ -46,13 +46,13 @@ Config.UI = {
     -- Main taser UI positioning
     taser = {
         enabled = true,
-        position = "right-center", -- Positioned on right side, vertically centered
+        position = "top-center", -- Centered at top like the clean smart-taser reference
         hideWhenNotAiming = true,
         
         -- Modern horizontal bar layout with enhanced spacing
         dimensions = {
-            width = 0.165,    -- Wider for better spacing
-            height = 0.055,   -- Slightly taller for enhanced visuals
+            width = 0.190,    -- Wider panel for a cleaner segmented layout
+            height = 0.050,   -- Slimmer capsule-like height
         },
         
         -- What elements to display (toggleable)
@@ -75,12 +75,12 @@ Config.UI = {
         
         -- Charge indicator cell options with modern styling
         chargeIndicator = {
-            cellWidth = 0.018,        -- Wider cells for better visibility
-            cellHeight = 0.028,       -- Taller cells
-            cellSpacing = 0.006,      -- More spacing between cells
-            filledColor = "#00ff88",  -- Bright neon green/cyan
-            emptyColor = "#ff4466",   -- Neon pink/red when empty
-            borderColor = "rgba(0, 255, 136, 255)",
+            cellWidth = 0.012,        -- Compact battery capsule width
+            cellHeight = 0.020,       -- Slim battery capsule height
+            cellSpacing = 0.007,      -- Balanced spacing between battery cells
+            filledColor = "#8dff3d",  -- Lime-green active battery
+            emptyColor = "#5a6a7a",   -- Muted slate for empty battery
+            borderColor = "rgba(141, 255, 61, 220)",
         }
     },
     
@@ -110,9 +110,9 @@ Config.UI = {
         font = 4,                    -- Font ID (0-7 available in GTA5)
         
         colors = {
-            background = "rgba(8, 8, 18, 245)",    -- Deep dark blue-black
+            background = "rgba(10, 14, 24, 240)",    -- Dark navy glass background
             text = "#ffffff",
-            accent = "#00ffff",       -- Bright cyan neon
+            accent = "#30e6ff",       -- Clean cyan accent
             success = "#00ff88",      -- Bright neon green-cyan
             warning = "#ffaa00",      -- Warm orange
             error = "#ff4466",        -- Neon pink/red

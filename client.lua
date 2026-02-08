@@ -202,7 +202,6 @@ local function drawTaserUI()
     
     -- Parse colors
     local bgR, bgG, bgB, bgA = parseRgba(themeConfig.colors.background)
-    local textR, textG, textB = hexToRgb(themeConfig.colors.text)
     local accentR, accentG, accentB = hexToRgb(themeConfig.colors.accent)
     
     -- Calculate screen position
@@ -237,132 +236,104 @@ local function drawTaserUI()
         yPos = 0.92 - (height / 2)
     end
     
-    -- Draw background bar
+    -- Clean layered panel with subtle depth
+    local halfW = width / 2
+    local halfH = height / 2
+
+    -- Soft shadow and glow
+    drawRect(xPos, yPos + 0.003, width + 0.016, height + 0.014, 0, 0, 0, 130)
+    drawRect(xPos, yPos, width + 0.010, height + 0.010, accentR, accentG, accentB, 24)
+
+    -- Main plate + inner plate for cleaner contrast
     drawRect(xPos, yPos, width, height, bgR, bgG, bgB, bgA)
-    
-    -- Draw subtle gradient overlay
-    drawRect(xPos, yPos, width, height * 0.4, 0, 0, 0, 30)
-    
-    -- Draw glowing borders (top)
-    drawRect(xPos, yPos - (height / 2) - 0.0025, width, 0.0025, accentR, accentG, accentB, 255)
-    drawRect(xPos, yPos - (height / 2) - 0.002, width, 0.0015, accentR, accentG, accentB, 200)
-    
-    -- Draw glowing borders (bottom)
-    drawRect(xPos, yPos + (height / 2) + 0.0025, width, 0.0025, accentR, accentG, accentB, 255)
-    drawRect(xPos, yPos + (height / 2) + 0.002, width, 0.0015, accentR, accentG, accentB, 200)
-    
-    -- Draw side borders (left)
-    drawRect(xPos - (width / 2) - 0.0025, yPos, 0.0025, height, accentR, accentG, accentB, 200)
-    drawRect(xPos - (width / 2) - 0.002, yPos, 0.0015, height, accentR, accentG, accentB, 150)
-    
-    -- Draw side borders (right)
-    drawRect(xPos + (width / 2) + 0.0025, yPos, 0.0025, height, accentR, accentG, accentB, 200)
-    drawRect(xPos + (width / 2) + 0.002, yPos, 0.0015, height, accentR, accentG, accentB, 150)
-    
-    -- Draw corner accents for futuristic look
-    local cornerSize = 0.008
-    
-    -- Top-left corner
-    drawRect(xPos - (width / 2) + cornerSize, yPos - (height / 2) + 0.001, cornerSize * 2, 0.002, accentR, accentG, accentB, 180)
-    drawRect(xPos - (width / 2) + 0.001, yPos - (height / 2) + cornerSize, 0.002, cornerSize * 2, accentR, accentG, accentB, 180)
-    
-    -- Top-right corner
-    drawRect(xPos + (width / 2) - cornerSize, yPos - (height / 2) + 0.001, cornerSize * 2, 0.002, accentR, accentG, accentB, 180)
-    drawRect(xPos + (width / 2) - 0.001, yPos - (height / 2) + cornerSize, 0.002, cornerSize * 2, accentR, accentG, accentB, 180)
-    
-    -- Bottom-left corner
-    drawRect(xPos - (width / 2) + cornerSize, yPos + (height / 2) - 0.001, cornerSize * 2, 0.002, accentR, accentG, accentB, 180)
-    drawRect(xPos - (width / 2) + 0.001, yPos + (height / 2) - cornerSize, 0.002, cornerSize * 2, accentR, accentG, accentB, 180)
-    
-    -- Bottom-right corner
-    drawRect(xPos + (width / 2) - cornerSize, yPos + (height / 2) - 0.001, cornerSize * 2, 0.002, accentR, accentG, accentB, 180)
-    drawRect(xPos + (width / 2) - 0.001, yPos + (height / 2) - cornerSize, 0.002, cornerSize * 2, accentR, accentG, accentB, 180)
-    
-    -- LEFT SECTION: Icon (Lightning Bolt)
-    local leftX = xPos - (width / 2) + 0.015
+    drawRect(xPos, yPos, width - 0.006, height - 0.010, 12, 18, 32, 210)
+
+    -- Top and bottom accent lines
+    drawRect(xPos, yPos - halfH + 0.0015, width - 0.006, 0.0025, accentR, accentG, accentB, 230)
+    drawRect(xPos, yPos + halfH - 0.0015, width - 0.006, 0.0020, 90, 120, 170, 120)
+
+    -- Section separators
+    local iconZoneW = 0.030
+    local batteryZoneW = 0.050
+    drawRect(xPos - halfW + iconZoneW, yPos, 0.0015, height - 0.014, 80, 130, 200, 110)
+    drawRect(xPos + halfW - batteryZoneW, yPos, 0.0015, height - 0.014, 80, 130, 200, 110)
+
+    -- LEFT SECTION: dual bolt icon like reference, cleaner glow
     if taserConfig.elements.icon then
+        local boltY = yPos - 0.012
+
         SetTextFont(themeConfig.font)
-        SetTextScale(0.42, 0.42)
-        SetTextColour(accentR, accentG, accentB, 230)
+        SetTextScale(0.44, 0.44)
+        SetTextColour(50, 230, 255, 255)
         SetTextCentre(true)
-        SetTextDropshadow(3, accentR, accentG, accentB, 180)
-        SetTextEdge(1, accentR, accentG, accentB, 150)
+        SetTextDropshadow(3, 50, 230, 255, 150)
         SetTextEntry("STRING")
         AddTextComponentString("⚡")
-        DrawText(leftX, yPos - 0.014)
-    end
-    
-    -- CENTER SECTION: Label text
-    local centerX = xPos - 0.015
-    if taserConfig.elements.label then
+        DrawText(xPos - halfW + 0.014, boltY)
+
         SetTextFont(themeConfig.font)
-        SetTextScale(0.38, 0.38)
-        SetTextColour(textR, textG, textB, 255)
+        SetTextScale(0.34, 0.34)
+        SetTextColour(255, 170, 64, 230)
         SetTextCentre(true)
-        SetTextDropshadow(2, 0, 0, 0, 200)
+        SetTextDropshadow(2, 255, 170, 64, 120)
+        SetTextEntry("STRING")
+        AddTextComponentString("⚡")
+        DrawText(xPos - halfW + 0.025, boltY + 0.001)
+    end
+
+    -- CENTER SECTION: Title text with state subtitle
+    if taserConfig.elements.label then
+        local centerTextX = xPos - 0.010
+        local stateText = isReloading and "RELOADING" or "SMART TASER"
+
+        SetTextFont(themeConfig.font)
+        SetTextScale(0.36, 0.36)
+        SetTextColour(120, 235, 255, 255)
+        SetTextCentre(true)
+        SetTextDropshadow(2, 0, 0, 0, 180)
         SetTextOutline()
         SetTextEntry("STRING")
-        
-        local labelText = isReloading and "RELOAD" or "READY TO USE"
-        
-        AddTextComponentString(labelText)
-        DrawText(centerX, yPos - 0.012)
+        AddTextComponentString(stateText)
+        DrawText(centerTextX, yPos - 0.010)
     end
-    
-    -- RIGHT SECTION: Charge Indicator
+
+    -- RIGHT SECTION: modern battery capsules
     if taserConfig.elements.chargeIndicator then
         local cellWidth = chargeConfig.cellWidth
         local cellHeight = chargeConfig.cellHeight
         local cellSpacing = chargeConfig.cellSpacing
         local filledR, filledG, filledB = hexToRgb(chargeConfig.filledColor)
         local emptyR, emptyG, emptyB = hexToRgb(chargeConfig.emptyColor)
-        local borderR, borderG, borderB, borderA = parseRgba(chargeConfig.borderColor)
-        
-        -- Calculate starting X position for cells
+
         local totalCellWidth = (Config.MaxCartridges * cellWidth) + ((Config.MaxCartridges - 1) * cellSpacing)
-        local cellStartX = xPos + (width / 2) - 0.012 - totalCellWidth
-        
-        -- Draw charge cells
+        local cellStartX = xPos + halfW - 0.010 - totalCellWidth
+
         for i = 1, Config.MaxCartridges do
             local cellX = cellStartX + ((i - 1) * (cellWidth + cellSpacing)) + (cellWidth / 2)
             local cellY = yPos
-            
-            -- Determine cell color based on charge status
-            local cellR, cellG, cellB, cellA
-            local glowR, glowG, glowB, glowA
-            
-            if i <= taserCartridges then
-                -- Charged cell
-                cellR, cellG, cellB, cellA = filledR, filledG, filledB, 255
-                glowR, glowG, glowB, glowA = filledR, filledG, filledB, 120
-            else
-                -- Empty cell
-                cellR, cellG, cellB, cellA = emptyR, emptyG, emptyB, 80
-                glowR, glowG, glowB, glowA = emptyR, emptyG, emptyB, 0
+            local active = i <= taserCartridges
+
+            local baseR = active and filledR or emptyR
+            local baseG = active and filledG or emptyG
+            local baseB = active and filledB or emptyB
+            local fillA = active and 230 or 85
+
+            -- Capsule glow and body
+            if active then
+                drawRect(cellX, cellY, cellWidth + 0.006, cellHeight + 0.006, baseR, baseG, baseB, 70)
             end
-            
-            -- Draw glow for charged cells
-            if i <= taserCartridges then
-                drawRect(cellX, cellY, cellWidth + 0.004, cellHeight + 0.004, glowR, glowG, glowB, glowA)
-            end
-            
-            -- Draw cell
-            drawRect(cellX, cellY, cellWidth, cellHeight, cellR, cellG, cellB, cellA)
-            
-            -- Draw cell border
-            local borderAlpha = i <= taserCartridges and 220 or 100
-            drawRect(cellX, cellY - (cellHeight / 2), cellWidth, 0.0025, borderR, borderG, borderB, borderAlpha)
-            drawRect(cellX, cellY + (cellHeight / 2), cellWidth, 0.0025, borderR, borderG, borderB, borderAlpha)
-            drawRect(cellX - (cellWidth / 2), cellY, 0.0025, cellHeight, borderR, borderG, borderB, borderAlpha)
-            drawRect(cellX + (cellWidth / 2), cellY, 0.0025, cellHeight, borderR, borderG, borderB, borderAlpha)
-            
-            -- Inner highlight for charged cells
-            if i <= taserCartridges then
-                drawRect(cellX, cellY, cellWidth * 0.6, cellHeight * 0.4, 255, 255, 255, 60)
+            drawRect(cellX, cellY, cellWidth, cellHeight, baseR, baseG, baseB, fillA)
+
+            -- battery nub
+            drawRect(cellX + (cellWidth / 2) + 0.002, cellY, 0.003, cellHeight * 0.45, 205, 235, 255, active and 220 or 70)
+
+            -- highlight strip
+            if active then
+                drawRect(cellX - 0.002, cellY - (cellHeight * 0.14), cellWidth * 0.45, cellHeight * 0.20, 255, 255, 255, 90)
             end
         end
     end
-    
+
     -- Cooldown timer removed
 end
 
