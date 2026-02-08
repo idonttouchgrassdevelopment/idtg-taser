@@ -46,7 +46,7 @@ Config.UI = {
     -- Main taser UI positioning
     taser = {
         enabled = true,
-        position = "top-center", -- Centered at top like the clean smart-taser reference
+        position = "right-center", -- Centered on the right side of screen
         hideWhenNotAiming = true,
         
         -- Modern horizontal bar layout with enhanced spacing
