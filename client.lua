@@ -239,13 +239,6 @@ local function drawTaserUI()
         safetyOn = safetyOn
     })
 
-    return
-
-    -- Calculate cooldown status
-    local currentTime = GetGameTimer()
-    local cooldownRemaining = math.max(0, cooldownEndTime - currentTime)
-    local isOnCooldown = cooldownRemaining > 0
-
     -- Get configuration
     local taserConfig = Config.UI.taser
     local themeConfig = Config.UI.theme
@@ -274,13 +267,6 @@ local function drawTaserUI()
     local yPos = 0.5
     local width = taserConfig.dimensions.width
     local height = taserConfig.dimensions.height
-
-    -- Keep reload progression in sync for visuals
-    if isReloading then
-        reloadProgress = math.min(1.0, (currentTime - reloadStartTime) / Config.ReloadTime)
-    else
-        reloadProgress = 0
-    end
 
     local halfW = width / 2
     local halfH = height / 2
