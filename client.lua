@@ -236,34 +236,41 @@ local function drawTaserUI()
         yPos = 0.92 - (height / 2)
     end
     
-    -- Clean layered panel with subtle depth
+    -- Keep reload progression in sync for visuals
+    if isReloading then
+        reloadProgress = math.min(1.0, (currentTime - reloadStartTime) / Config.ReloadTime)
+    else
+        reloadProgress = 0
+    end
+
+    -- Polished layered panel with subtle depth
     local halfW = width / 2
     local halfH = height / 2
 
-    -- Soft shadow and glow
-    drawRect(xPos, yPos + 0.003, width + 0.016, height + 0.014, 0, 0, 0, 130)
-    drawRect(xPos, yPos, width + 0.010, height + 0.010, accentR, accentG, accentB, 24)
+    -- Soft shadow and edge glow
+    drawRect(xPos, yPos + 0.004, width + 0.018, height + 0.016, 0, 0, 0, 140)
+    drawRect(xPos, yPos, width + 0.012, height + 0.012, accentR, accentG, accentB, 20)
 
-    -- Main plate + inner plate for cleaner contrast
+    -- Main shell and inner layer
     drawRect(xPos, yPos, width, height, bgR, bgG, bgB, bgA)
-    drawRect(xPos, yPos, width - 0.006, height - 0.010, 12, 18, 32, 210)
+    drawRect(xPos, yPos, width - 0.006, height - 0.009, 11, 17, 28, 220)
 
-    -- Top and bottom accent lines
-    drawRect(xPos, yPos - halfH + 0.0015, width - 0.006, 0.0025, accentR, accentG, accentB, 230)
-    drawRect(xPos, yPos + halfH - 0.0015, width - 0.006, 0.0020, 90, 120, 170, 120)
+    -- Trim accents
+    drawRect(xPos, yPos - halfH + 0.0015, width - 0.006, 0.0025, accentR, accentG, accentB, 220)
+    drawRect(xPos, yPos + halfH - 0.0015, width - 0.006, 0.0018, 85, 112, 160, 130)
 
     -- Section separators
-    local iconZoneW = 0.030
-    local batteryZoneW = 0.050
-    drawRect(xPos - halfW + iconZoneW, yPos, 0.0015, height - 0.014, 80, 130, 200, 110)
-    drawRect(xPos + halfW - batteryZoneW, yPos, 0.0015, height - 0.014, 80, 130, 200, 110)
+    local iconZoneW = 0.033
+    local batteryZoneW = 0.056
+    drawRect(xPos - halfW + iconZoneW, yPos, 0.0015, height - 0.013, 88, 138, 205, 125)
+    drawRect(xPos + halfW - batteryZoneW, yPos, 0.0015, height - 0.013, 88, 138, 205, 125)
 
-    -- LEFT SECTION: dual bolt icon like reference, cleaner glow
+    -- LEFT SECTION: icon + compact device id
     if taserConfig.elements.icon then
-        local boltY = yPos - 0.012
+        local boltY = yPos - 0.011
 
         SetTextFont(themeConfig.font)
-        SetTextScale(0.44, 0.44)
+        SetTextScale(0.43, 0.43)
         SetTextColour(50, 230, 255, 255)
         SetTextCentre(true)
         SetTextDropshadow(3, 50, 230, 255, 150)
@@ -272,32 +279,66 @@ local function drawTaserUI()
         DrawText(xPos - halfW + 0.014, boltY)
 
         SetTextFont(themeConfig.font)
-        SetTextScale(0.34, 0.34)
-        SetTextColour(255, 170, 64, 230)
+        SetTextScale(0.24, 0.24)
+        SetTextColour(167, 193, 224, 220)
         SetTextCentre(true)
-        SetTextDropshadow(2, 255, 170, 64, 120)
+        SetTextDropshadow(1, 0, 0, 0, 180)
         SetTextEntry("STRING")
-        AddTextComponentString("⚡")
-        DrawText(xPos - halfW + 0.025, boltY + 0.001)
+        AddTextComponentString("X26")
+        DrawText(xPos - halfW + 0.016, boltY + 0.020)
     end
 
-    -- CENTER SECTION: Title text with state subtitle
+    -- CENTER SECTION: branded title + dynamic status tag
     if taserConfig.elements.label then
-        local centerTextX = xPos - 0.010
-        local stateText = isReloading and "RELOADING" or "SMART TASER"
+        local centerTextX = xPos - 0.002
+        local titleText = "TACTICAL TASER"
+        local stateText = "READY"
+        local stateR, stateG, stateB = 110, 245, 160
+
+        if isReloading then
+            stateText = "RELOADING"
+            stateR, stateG, stateB = 255, 198, 82
+        elseif taserCartridges <= 0 then
+            stateText = "EMPTY"
+            stateR, stateG, stateB = 255, 100, 112
+        elseif isOnCooldown then
+            stateText = "CHARGING"
+            stateR, stateG, stateB = 120, 205, 255
+        end
 
         SetTextFont(themeConfig.font)
-        SetTextScale(0.36, 0.36)
-        SetTextColour(120, 235, 255, 255)
+        SetTextScale(0.33, 0.33)
+        SetTextColour(120, 230, 255, 255)
         SetTextCentre(true)
         SetTextDropshadow(2, 0, 0, 0, 180)
         SetTextOutline()
         SetTextEntry("STRING")
+        AddTextComponentString(titleText)
+        DrawText(centerTextX, yPos - 0.014)
+
+        drawRect(centerTextX, yPos + 0.012, 0.055, 0.014, 14, 24, 38, 225)
+        drawRect(centerTextX, yPos + 0.012, 0.054, 0.0012, stateR, stateG, stateB, 230)
+
+        SetTextFont(themeConfig.font)
+        SetTextScale(0.24, 0.24)
+        SetTextColour(stateR, stateG, stateB, 255)
+        SetTextCentre(true)
+        SetTextEntry("STRING")
         AddTextComponentString(stateText)
-        DrawText(centerTextX, yPos - 0.010)
+        DrawText(centerTextX, yPos + 0.007)
+
+        if isOnCooldown and not isReloading then
+            SetTextFont(themeConfig.font)
+            SetTextScale(0.25, 0.25)
+            SetTextColour(196, 220, 245, 230)
+            SetTextCentre(true)
+            SetTextEntry("STRING")
+            AddTextComponentString(formatTime(cooldownRemaining))
+            DrawText(centerTextX + 0.050, yPos + 0.007)
+        end
     end
 
-    -- RIGHT SECTION: modern battery capsules
+    -- RIGHT SECTION: polished cartridge cells
     if taserConfig.elements.chargeIndicator then
         local cellWidth = chargeConfig.cellWidth
         local cellHeight = chargeConfig.cellHeight
@@ -316,7 +357,7 @@ local function drawTaserUI()
             local baseR = active and filledR or emptyR
             local baseG = active and filledG or emptyG
             local baseB = active and filledB or emptyB
-            local fillA = active and 230 or 85
+            local fillA = active and 230 or 80
 
             -- Capsule glow and body
             if active then
@@ -334,7 +375,19 @@ local function drawTaserUI()
         end
     end
 
-    -- Cooldown timer removed
+    -- Reload progress rail
+    if isReloading then
+        local railWidth = width - 0.016
+        local railX = xPos
+        local railY = yPos + halfH + 0.007
+        local fillWidth = railWidth * reloadProgress
+
+        drawRect(railX, railY, railWidth, 0.0045, 20, 30, 48, 210)
+        if fillWidth > 0 then
+            drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0045, 255, 198, 82, 240)
+            drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0080, 255, 198, 82, 65)
+        end
+    end
 end
 
 -- ============================================
