@@ -95,6 +95,28 @@
         .warning { color: var(--ox-warning); }
         .danger { color: var(--ox-danger); }
         .safe { color: var(--ox-success); }
+
+        @keyframes safetyOnPulse {
+            0% { transform: scale(1); text-shadow: 0 0 0 rgba(143, 227, 136, 0); }
+            40% { transform: scale(1.14); text-shadow: 0 0 10px rgba(143, 227, 136, 0.8); }
+            100% { transform: scale(1); text-shadow: 0 0 0 rgba(143, 227, 136, 0); }
+        }
+
+        @keyframes safetyOffPulse {
+            0% { transform: scale(1); text-shadow: 0 0 0 rgba(255, 125, 125, 0); }
+            40% { transform: scale(0.9); text-shadow: 0 0 10px rgba(255, 125, 125, 0.75); }
+            100% { transform: scale(1); text-shadow: 0 0 0 rgba(255, 125, 125, 0); }
+        }
+
+        .safety-anim-on,
+        .safety-anim-off {
+            display: inline-block;
+            transform-origin: center;
+            will-change: transform, text-shadow;
+        }
+
+        .safety-anim-on { animation: safetyOnPulse 240ms ease-out; }
+        .safety-anim-off { animation: safetyOffPulse 240ms ease-out; }
     </style>
 </head>
 <body>
@@ -133,6 +155,8 @@
         const charge = document.getElementById('charge');
         const safety = document.getElementById('safety');
 
+        let lastSafetyOn = null;
+
         function setStatusTheme(status) {
             const lowered = String(status || '').toLowerCase();
             if (lowered === 'ready') {
@@ -148,6 +172,14 @@
                 statusPill.style.borderColor = 'rgba(255,125,125,.45)';
                 statusPill.style.background = 'rgba(255,125,125,.14)';
             }
+        }
+
+        function playSafetyAnimation(isOn) {
+            const animationClass = isOn ? 'safety-anim-on' : 'safety-anim-off';
+            safety.classList.remove('safety-anim-on', 'safety-anim-off');
+            // Force layout to allow replaying animation class
+            void safety.offsetWidth;
+            safety.classList.add(animationClass);
         }
 
         window.addEventListener('message', (event) => {
@@ -174,8 +206,15 @@
             charge.textContent = `${pct}%`;
             charge.className = `stat-value ${pct < 30 ? 'danger' : 'warning'}`;
 
-            safety.textContent = data.safetyOn ? 'On' : 'Off';
-            safety.className = `stat-value ${data.safetyOn ? 'safe' : 'danger'}`;
+            const safetyOn = Boolean(data.safetyOn);
+            safety.textContent = safetyOn ? 'On' : 'Off';
+            safety.className = `stat-value ${safetyOn ? 'safe' : 'danger'}`;
+
+            if (lastSafetyOn !== null && lastSafetyOn !== safetyOn) {
+                playSafetyAnimation(safetyOn);
+            }
+
+            lastSafetyOn = safetyOn;
         });
     </script>
 </body>
