@@ -243,102 +243,111 @@ local function drawTaserUI()
         reloadProgress = 0
     end
 
-    -- Polished layered panel with subtle depth
+    -- ox_lib inspired clean panel layout
     local halfW = width / 2
     local halfH = height / 2
 
-    -- Soft shadow and edge glow
-    drawRect(xPos, yPos + 0.004, width + 0.018, height + 0.016, 0, 0, 0, 140)
-    drawRect(xPos, yPos, width + 0.012, height + 0.012, accentR, accentG, accentB, 20)
-
-    -- Main shell and inner layer
+    -- Background shell (soft shadow + body)
+    drawRect(xPos, yPos + 0.004, width + 0.010, height + 0.010, 0, 0, 0, 130)
     drawRect(xPos, yPos, width, height, bgR, bgG, bgB, bgA)
-    drawRect(xPos, yPos, width - 0.006, height - 0.009, 11, 17, 28, 220)
+    drawRect(xPos, yPos, width - 0.004, height - 0.007, 16, 21, 30, 228)
 
-    -- Trim accents
-    drawRect(xPos, yPos - halfH + 0.0015, width - 0.006, 0.0025, accentR, accentG, accentB, 220)
-    drawRect(xPos, yPos + halfH - 0.0015, width - 0.006, 0.0018, 85, 112, 160, 130)
+    -- ox_lib style top strip
+    drawRect(xPos, yPos - halfH + 0.0012, width - 0.004, 0.0024, accentR, accentG, accentB, 240)
 
-    -- Section separators
-    local iconZoneW = 0.033
-    local batteryZoneW = 0.056
-    drawRect(xPos - halfW + iconZoneW, yPos, 0.0015, height - 0.013, 88, 138, 205, 125)
-    drawRect(xPos + halfW - batteryZoneW, yPos, 0.0015, height - 0.013, 88, 138, 205, 125)
+    -- Zones
+    local leftZoneWidth = 0.026
+    local rightZoneWidth = 0.058
+    local centerZoneWidth = width - leftZoneWidth - rightZoneWidth - 0.012
 
-    -- LEFT SECTION: icon + compact device id
+    drawRect(xPos - halfW + leftZoneWidth, yPos, 0.0012, height - 0.010, 94, 106, 124, 140)
+    drawRect(xPos + halfW - rightZoneWidth, yPos, 0.0012, height - 0.010, 94, 106, 124, 140)
+
+    -- LEFT SECTION: simple icon block
     if taserConfig.elements.icon then
-        local boltY = yPos - 0.011
+        local boltY = yPos - 0.0115
 
         SetTextFont(themeConfig.font)
-        SetTextScale(0.43, 0.43)
-        SetTextColour(50, 230, 255, 255)
+        SetTextScale(0.42, 0.42)
+        SetTextColour(214, 243, 255, 255)
         SetTextCentre(true)
-        SetTextDropshadow(3, 50, 230, 255, 150)
+        SetTextDropshadow(2, 0, 0, 0, 180)
         SetTextEntry("STRING")
         AddTextComponentString("⚡")
-        DrawText(xPos - halfW + 0.014, boltY)
+        DrawText(xPos - halfW + 0.013, boltY)
 
         SetTextFont(themeConfig.font)
-        SetTextScale(0.24, 0.24)
-        SetTextColour(167, 193, 224, 220)
+        SetTextScale(0.20, 0.20)
+        SetTextColour(138, 160, 190, 210)
         SetTextCentre(true)
-        SetTextDropshadow(1, 0, 0, 0, 180)
+        SetTextDropshadow(1, 0, 0, 0, 150)
         SetTextEntry("STRING")
-        AddTextComponentString("X26")
-        DrawText(xPos - halfW + 0.016, boltY + 0.020)
+        AddTextComponentString("26")
+        DrawText(xPos - halfW + 0.013, boltY + 0.019)
     end
 
-    -- CENTER SECTION: branded title + dynamic status tag
+    -- CENTER SECTION: ox_lib style title + context line
     if taserConfig.elements.label then
-        local centerTextX = xPos - 0.002
-        local titleText = "TACTICAL TASER"
+        local centerTextX = xPos - (centerZoneWidth / 2) + 0.055
+        local titleText = "TASER CONTROL"
         local stateText = "READY"
-        local stateR, stateG, stateB = 110, 245, 160
+        local stateR, stateG, stateB = 123, 242, 169
+        local helperText = "SAFE"
 
         if isReloading then
             stateText = "RELOADING"
+            helperText = "INSERTING CART"
             stateR, stateG, stateB = 255, 198, 82
         elseif taserCartridges <= 0 then
             stateText = "EMPTY"
+            helperText = "PRESS R"
             stateR, stateG, stateB = 255, 100, 112
         elseif isOnCooldown then
             stateText = "CHARGING"
+            helperText = "CAPACITOR"
             stateR, stateG, stateB = 120, 205, 255
         end
 
         SetTextFont(themeConfig.font)
-        SetTextScale(0.33, 0.33)
-        SetTextColour(120, 230, 255, 255)
-        SetTextCentre(true)
-        SetTextDropshadow(2, 0, 0, 0, 180)
-        SetTextOutline()
+        SetTextScale(0.29, 0.29)
+        SetTextColour(220, 236, 255, 245)
+        SetTextCentre(false)
+        SetTextDropshadow(1, 0, 0, 0, 160)
         SetTextEntry("STRING")
         AddTextComponentString(titleText)
-        DrawText(centerTextX, yPos - 0.014)
-
-        drawRect(centerTextX, yPos + 0.012, 0.055, 0.014, 14, 24, 38, 225)
-        drawRect(centerTextX, yPos + 0.012, 0.054, 0.0012, stateR, stateG, stateB, 230)
+        DrawText(centerTextX - 0.035, yPos - 0.014)
 
         SetTextFont(themeConfig.font)
-        SetTextScale(0.24, 0.24)
+        SetTextScale(0.22, 0.22)
+        SetTextColour(130, 152, 181, 230)
+        SetTextCentre(false)
+        SetTextEntry("STRING")
+        AddTextComponentString(helperText)
+        DrawText(centerTextX - 0.035, yPos + 0.002)
+
+        drawRect(centerTextX + 0.021, yPos + 0.010, 0.050, 0.014, 12, 18, 28, 230)
+        drawRect(centerTextX + 0.021, yPos + 0.0033, 0.049, 0.0012, stateR, stateG, stateB, 240)
+
+        SetTextFont(themeConfig.font)
+        SetTextScale(0.22, 0.22)
         SetTextColour(stateR, stateG, stateB, 255)
         SetTextCentre(true)
         SetTextEntry("STRING")
         AddTextComponentString(stateText)
-        DrawText(centerTextX, yPos + 0.007)
+        DrawText(centerTextX + 0.021, yPos + 0.005)
 
         if isOnCooldown and not isReloading then
             SetTextFont(themeConfig.font)
-            SetTextScale(0.25, 0.25)
-            SetTextColour(196, 220, 245, 230)
+            SetTextScale(0.20, 0.20)
+            SetTextColour(188, 212, 242, 230)
             SetTextCentre(true)
             SetTextEntry("STRING")
             AddTextComponentString(formatTime(cooldownRemaining))
-            DrawText(centerTextX + 0.050, yPos + 0.007)
+            DrawText(centerTextX + 0.050, yPos + 0.005)
         end
     end
 
-    -- RIGHT SECTION: polished cartridge cells
+    -- RIGHT SECTION: compact charge pods (ox_lib status pill vibe)
     if taserConfig.elements.chargeIndicator then
         local cellWidth = chargeConfig.cellWidth
         local cellHeight = chargeConfig.cellHeight
@@ -361,31 +370,28 @@ local function drawTaserUI()
 
             -- Capsule glow and body
             if active then
-                drawRect(cellX, cellY, cellWidth + 0.006, cellHeight + 0.006, baseR, baseG, baseB, 70)
+                drawRect(cellX, cellY, cellWidth + 0.004, cellHeight + 0.004, baseR, baseG, baseB, 70)
             end
             drawRect(cellX, cellY, cellWidth, cellHeight, baseR, baseG, baseB, fillA)
 
-            -- battery nub
-            drawRect(cellX + (cellWidth / 2) + 0.002, cellY, 0.003, cellHeight * 0.45, 205, 235, 255, active and 220 or 70)
-
             -- highlight strip
             if active then
-                drawRect(cellX - 0.002, cellY - (cellHeight * 0.14), cellWidth * 0.45, cellHeight * 0.20, 255, 255, 255, 90)
+                drawRect(cellX - 0.0015, cellY - (cellHeight * 0.14), cellWidth * 0.45, cellHeight * 0.18, 255, 255, 255, 80)
             end
         end
     end
 
-    -- Reload progress rail
+    -- Reload progress rail (subtle ox_lib progress style)
     if isReloading then
         local railWidth = width - 0.016
         local railX = xPos
         local railY = yPos + halfH + 0.007
         local fillWidth = railWidth * reloadProgress
 
-        drawRect(railX, railY, railWidth, 0.0045, 20, 30, 48, 210)
+        drawRect(railX, railY, railWidth, 0.0038, 22, 30, 44, 215)
         if fillWidth > 0 then
-            drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0045, 255, 198, 82, 240)
-            drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0080, 255, 198, 82, 65)
+            drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0038, accentR, accentG, accentB, 240)
+            drawRect(railX - (railWidth / 2) + (fillWidth / 2), railY, fillWidth, 0.0068, accentR, accentG, accentB, 55)
         end
     end
 end
