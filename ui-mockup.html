@@ -3,8 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IDTG Taser UI - New Design</title>
+    <title>IDTG Taser UI - Ox Lib Style</title>
     <style>
+        :root {
+            color-scheme: dark;
+            --ox-bg: rgba(18, 18, 20, 0.95);
+            --ox-surface: rgba(26, 26, 29, 0.94);
+            --ox-border: rgba(255, 255, 255, 0.07);
+            --ox-text: #efefef;
+            --ox-muted: #9fa1a6;
+            --ox-success: #8fe388;
+            --ox-warning: #f8d66d;
+            --ox-danger: #f18282;
+            --ox-primary: #6ca9ff;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,504 +25,194 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0a0e16;
             min-height: 100vh;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: flex-end;
+            padding-right: 4.5vw;
             overflow: hidden;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at 30% 40%, #1f2025, #131418 52%, #0e0f12);
+            color: var(--ox-text);
         }
 
-        .game-screen {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: linear-gradient(135deg, #1a1f2e 0%, #0f141a 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-
-        .crosshair::before,
-        .crosshair::after {
-            content: '';
-            position: absolute;
-            background: rgba(255, 255, 255, 0.5);
-        }
-
-        .crosshair::before {
-            width: 2px;
-            height: 12px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .crosshair::after {
-            width: 12px;
-            height: 2px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .taser-ui {
-            position: absolute;
-            right: 8%;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(8, 12, 20, 0.96);
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3),
-                        0 0 40px rgba(0, 0, 0, 0.5),
-                        inset 0 0 20px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(0, 212, 255, 0.3);
+        .hud-wrap {
+            width: 320px;
+            border: 1px solid var(--ox-border);
+            border-radius: 12px;
             overflow: hidden;
-            width: 280px;
-            padding: 0;
+            background: var(--ox-bg);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(8px);
         }
 
-        .taser-ui::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #00d4ff 0%, #00ff88 100%);
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-        }
-
-        .ui-content {
-            display: flex;
-            padding: 12px 10px;
-            background: linear-gradient(180deg, rgba(14, 20, 32, 0.95) 0%, rgba(8, 12, 20, 0.95) 100%);
-            height: 90px;
-        }
-
-        .ui-section {
+        .hud-header {
+            padding: 0.75rem 0.95rem;
             display: flex;
             align-items: center;
-            justify-content: center;
-            position: relative;
+            justify-content: space-between;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+            border-bottom: 1px solid var(--ox-border);
         }
 
-        .ui-divider {
-            width: 1px;
-            height: 100%;
-            background: linear-gradient(180deg, transparent 0%, rgba(0, 212, 255, 0.4) 50%, transparent 100%);
-            margin: 0 8px;
+        .hud-title {
+            font-size: 0.84rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 700;
         }
 
-        .icon-section {
-            width: 60px;
+        .hud-chip {
+            font-size: 0.72rem;
+            color: var(--ox-muted);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--ox-border);
+            padding: 0.2rem 0.5rem;
+            border-radius: 999px;
         }
 
-        .icon {
-            width: 45px;
-            height: 45px;
-            background: rgba(0, 212, 255, 0.15);
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 28px;
-            color: #00d4ff;
-            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-            position: relative;
+        .hud-body {
+            display: grid;
+            grid-template-columns: 68px 1fr;
+            gap: 0.8rem;
+            padding: 0.95rem;
+            background: var(--ox-surface);
         }
 
-        .icon::before {
-            content: '';
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background: rgba(0, 212, 255, 0.1);
+        .taser-icon {
+            height: 68px;
+            border: 1px solid var(--ox-border);
             border-radius: 10px;
-            z-index: -1;
+            display: grid;
+            place-items: center;
+            font-size: 1.8rem;
+            color: var(--ox-primary);
+            background: rgba(108, 169, 255, 0.08);
         }
 
-        .model-number {
-            font-size: 10px;
-            color: rgba(100, 150, 180, 0.8);
-            text-align: center;
-            margin-top: 4px;
-            letter-spacing: 1px;
-        }
-
-        .status-section {
-            flex: 1;
+        .status-panel {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 0 10px;
+            gap: 0.45rem;
         }
 
-        .title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #c8ebff;
+        .status-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .status-name {
+            font-weight: 700;
+            font-size: 0.93rem;
+            letter-spacing: 0.03em;
+        }
+
+        .status-time {
+            font-size: 0.76rem;
+            color: var(--ox-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .status-pill {
+            width: fit-content;
+            padding: 0.28rem 0.5rem;
+            border-radius: 7px;
+            border: 1px solid rgba(143, 227, 136, 0.45);
+            background: rgba(143, 227, 136, 0.14);
+            color: var(--ox-success);
+            font-size: 0.74rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
-            text-shadow: 0 0 5px rgba(200, 235, 255, 0.3);
+            letter-spacing: 0.05em;
+            font-weight: 700;
         }
 
-        .subtitle {
-            font-size: 11px;
-            color: rgba(140, 175, 200, 0.9);
-            margin-bottom: 6px;
-            letter-spacing: 0.5px;
+        .bar-wrap {
+            margin-top: 0.2rem;
+            height: 7px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.06);
+            overflow: hidden;
         }
 
-        .status-badge {
-            display: flex;
-            align-items: center;
-            background: rgba(10, 16, 26, 0.95);
-            border-radius: 4px;
-            padding: 4px 8px;
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            position: relative;
-        }
-
-        .status-badge::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 8px;
-            right: 8px;
-            height: 2px;
-            background: linear-gradient(90deg, #00ff88 0%, #00cc66 100%);
-            border-radius: 1px;
-            box-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
-        }
-
-        .status-text {
-            font-size: 11px;
-            font-weight: 600;
-            color: #00ff88;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
-            flex: 1;
-        }
-
-        .timer {
-            font-size: 10px;
-            color: rgba(180, 220, 255, 0.9);
-            margin-left: 6px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .charge-section {
-            width: 80px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .charge-cells {
-            display: flex;
-            gap: 8px;
-        }
-
-        .charge-cell {
-            width: 18px;
-            height: 28px;
-            border-radius: 4px;
-            position: relative;
-            transition: all 0.3s ease;
-        }
-
-        .charge-cell.active {
-            background: linear-gradient(180deg, #8dff3d 0%, #5cb820 100%);
-            box-shadow: 0 0 10px rgba(141, 255, 61, 0.6),
-                        0 0 20px rgba(141, 255, 61, 0.3);
-        }
-
-        .charge-cell.active::before {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 3px;
-            right: 3px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 2px;
-        }
-
-        .charge-cell.empty {
-            background: rgba(90, 106, 122, 0.4);
-            border: 1px solid rgba(90, 106, 122, 0.3);
-        }
-
-        .reload-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: rgba(20, 28, 40, 0.95);
-            border-top: 1px solid rgba(0, 212, 255, 0.2);
-        }
-
-        .reload-progress {
+        .bar {
             height: 100%;
-            background: linear-gradient(90deg, #00d4ff 0%, #00ff88 100%);
-            box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
-            transition: width 0.3s ease;
+            width: 55%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #6ca9ff, #91dd8b);
         }
 
-        .label {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 14px;
+        .hud-footer {
+            padding: 0.75rem 0.95rem;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.4rem;
+            border-top: 1px solid var(--ox-border);
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        .stat {
+            border: 1px solid var(--ox-border);
+            border-radius: 8px;
+            padding: 0.45rem 0.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            text-align: center;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.63rem;
+            color: var(--ox-muted);
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.25rem;
         }
 
-        .variant-label {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 12px;
+        .stat-value {
+            font-size: 0.86rem;
+            font-weight: 700;
         }
 
-        /* Variant states */
-        .charging .status-badge::before {
-            background: linear-gradient(90deg, #00d4ff 0%, #0099cc 100%);
-            box-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
-        }
-
-        .charging .status-text {
-            color: #00d4ff;
-            text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
-        }
-
-        .reloading .status-badge::before {
-            background: linear-gradient(90deg, #ffcc00 0%, #cc9900 100%);
-            box-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
-        }
-
-        .reloading .status-text {
-            color: #ffcc00;
-            text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
-        }
-
-        .empty .status-badge::before {
-            background: linear-gradient(90deg, #ff4444 0%, #cc3333 100%);
-            box-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
-        }
-
-        .empty .status-text {
-            color: #ff4444;
-            text-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
-        }
+        .warning { color: var(--ox-warning); }
+        .danger { color: var(--ox-danger); }
     </style>
-<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
 <body>
-    <div class="game-screen">
-        <div class="label">In-Game View</div>
-        <div class="crosshair"></div>
-        
-        <div class="taser-ui">
-            <div class="ui-content">
-                <!-- Icon Section -->
-                <div class="ui-section icon-section">
-                    <div class="icon">⚡</div>
-                    <div class="model-number">26</div>
+    <section class="hud-wrap" aria-label="Taser status">
+        <header class="hud-header">
+            <p class="hud-title">Taser Control</p>
+            <span class="hud-chip">X26</span>
+        </header>
+
+        <div class="hud-body">
+            <div class="taser-icon">⚡</div>
+            <div class="status-panel">
+                <div class="status-top">
+                    <p class="status-name">Operational</p>
+                    <p class="status-time">Cooldown: 1.2s</p>
                 </div>
-                
-                <div class="ui-divider"></div>
-                
-                <!-- Status Section -->
-                <div class="ui-section status-section">
-                    <div class="title">SMART TASER</div>
-                    <div class="subtitle">SYSTEM ACTIVE</div>
-                    <div class="status-badge">
-                        <span class="status-text">READY</span>
-                        <span class="timer" id="timer"></span>
-                    </div>
+                <p class="status-pill">Ready</p>
+                <div class="bar-wrap">
+                    <div class="bar"></div>
                 </div>
-                
-                <div class="ui-divider"></div>
-                
-                <!-- Charge Section -->
-                <div class="ui-section charge-section">
-                    <div class="charge-cells">
-                        <div class="charge-cell active"></div>
-                        <div class="charge-cell active"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="reload-bar">
-                <div class="reload-progress" style="width: 0%;"></div>
             </div>
         </div>
 
-        <div class="variant-label">Default State: READY</div>
-    </div>
-
-    <script>
-        // Simulate different states for demonstration
-        const ui = document.querySelector('.taser-ui');
-        const timerEl = document.getElementById('timer');
-        const reloadProgress = document.querySelector('.reload-progress');
-        const chargeCells = document.querySelectorAll('.charge-cell');
-        const statusText = document.querySelector('.status-text');
-        const subtitle = document.querySelector('.subtitle');
-        const variantLabel = document.querySelector('.variant-label');
-
-        let currentState = 'ready';
-        let cartridges = 2;
-        let cooldownRemaining = 0;
-        let isReloading = false;
-
-        const states = [
-            { name: 'ready', label: 'Default State: READY' },
-            { name: 'charging', label: 'Charging State: COOLDOWN' },
-            { name: 'fired', label: 'After Firing: 1 CARTRIDGE' },
-            { name: 'empty', label: 'Empty State: PRESS R' },
-            { name: 'reloading', label: 'Reloading State' },
-        ];
-
-        let stateIndex = 0;
-        let cooldownInterval;
-
-        function updateUI() {
-            ui.className = 'taser-ui ' + currentState;
-            timerEl.textContent = cooldownRemaining > 0 ? cooldownRemaining.toFixed(1) + 's' : '';
-            
-            // Update charge cells
-            chargeCells.forEach((cell, index) => {
-                if (index < cartridges) {
-                    cell.classList.add('active');
-                    cell.classList.remove('empty');
-                } else {
-                    cell.classList.remove('active');
-                    cell.classList.add('empty');
-                }
-            });
-
-            // Update status text
-            switch(currentState) {
-                case 'ready':
-                    statusText.textContent = 'READY';
-                    subtitle.textContent = 'SYSTEM ACTIVE';
-                    break;
-                case 'charging':
-                    statusText.textContent = 'CHARGING';
-                    subtitle.textContent = 'CAPACITOR RECHARGING';
-                    break;
-                case 'fired':
-                    statusText.textContent = 'READY';
-                    subtitle.textContent = 'SYSTEM ACTIVE';
-                    break;
-                case 'empty':
-                    statusText.textContent = 'EMPTY';
-                    subtitle.textContent = 'PRESS R TO RELOAD';
-                    break;
-                case 'reloading':
-                    statusText.textContent = 'RELOADING';
-                    subtitle.textContent = 'INSERTING CARTRIDGE';
-                    break;
-            }
-
-            variantLabel.textContent = states[stateIndex].label;
-        }
-
-        function cycleState() {
-            stateIndex = (stateIndex + 1) % states.length;
-            currentState = states[stateIndex].name;
-
-            // Reset animations
-            clearInterval(cooldownInterval);
-            
-            // Set state-specific values
-            switch(currentState) {
-                case 'ready':
-                    cartridges = 2;
-                    cooldownRemaining = 0;
-                    isReloading = false;
-                    reloadProgress.style.width = '0%';
-                    break;
-                case 'charging':
-                    cartridges = 1;
-                    cooldownRemaining = 3.0;
-                    isReloading = false;
-                    reloadProgress.style.width = '0%';
-                    
-                    cooldownInterval = setInterval(() => {
-                        cooldownRemaining -= 0.1;
-                        if (cooldownRemaining <= 0) {
-                            cooldownRemaining = 0;
-                            clearInterval(cooldownInterval);
-                        }
-                        updateUI();
-                    }, 100);
-                    break;
-                case 'fired':
-                    cartridges = 1;
-                    cooldownRemaining = 0;
-                    isReloading = false;
-                    reloadProgress.style.width = '0%';
-                    break;
-                case 'empty':
-                    cartridges = 0;
-                    cooldownRemaining = 0;
-                    isReloading = false;
-                    reloadProgress.style.width = '0%';
-                    break;
-                case 'reloading':
-                    cartridges = 0;
-                    cooldownRemaining = 0;
-                    isReloading = true;
-                    
-                    // Animate reload progress
-                    let progress = 0;
-                    const reloadInterval = setInterval(() => {
-                        progress += 2;
-                        reloadProgress.style.width = progress + '%';
-                        if (progress >= 100) {
-                            clearInterval(reloadInterval);
-                            cartridges = 2;
-                        }
-                        updateUI();
-                    }, 40);
-                    break;
-            }
-
-            updateUI();
-        }
-
-        // Auto-cycle through states every 3 seconds
-        setInterval(cycleState, 3000);
-
-        // Initial UI update
-        updateUI();
-
-        // Click to manually cycle states
-        document.addEventListener('click', cycleState);
-    </script>
+        <footer class="hud-footer">
+            <div class="stat">
+                <span class="stat-label">Cartridges</span>
+                <span class="stat-value">2 / 2</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Charge</span>
+                <span class="stat-value warning">73%</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Safety</span>
+                <span class="stat-value danger">Off</span>
+            </div>
+        </footer>
+    </section>
 </body>
 </html>
