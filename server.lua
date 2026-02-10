@@ -73,11 +73,10 @@ local function consumeCartridge(src)
 
     if hasOxInventory then
         local count = exports.ox_inventory:Search(src, 'count', itemName) or 0
-        if count < 1 then
-            return false
-        end
-
-        return exports.ox_inventory:RemoveItem(src, itemName, 1)
+        -- Keep ox_inventory as the source of truth for ammo handling.
+        -- We only validate that at least one cartridge exists so native weapon
+        -- behaviour (including ammo blocking) remains intact.
+        return count >= 1
     end
 
     if hasFramework and GetPlayer then
