@@ -418,12 +418,6 @@ CreateThread(function()
                             description = "Taser is already fully loaded",
                             type = "warning",
                         })
-                    elseif taserCartridges > 0 then
-                        showNotification({
-                            title = "⚡ Reload Blocked",
-                            description = "Use all cartridges before reloading",
-                            type = "warning",
-                        })
                     else
                         TriggerServerEvent('smarttaser:checkCartridgeItem', taserCartridges)
                     end
