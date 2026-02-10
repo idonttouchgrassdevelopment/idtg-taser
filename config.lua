@@ -6,6 +6,7 @@ Config.TaserCooldown = 5000 -- Cooldown between shots (ms) - ADJUST THIS VALUE P
 Config.StunDuration = 6500 -- How long target stays down (ms) - ADJUST THIS VALUE PER SERVER NEEDS
 Config.ReloadTime = 2000 -- Reload time (ms) - ADJUST THIS VALUE PER SERVER NEEDS
 Config.ReloadKey = 45 -- R
+Config.CartridgeItem = 'taser_cartridge' -- ox_inventory ammo item used for manual reload
 
 -- Timer Configuration
 Config.Timers = {

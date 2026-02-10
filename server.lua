@@ -1,5 +1,6 @@
 local hasFramework = false
 local GetPlayer = nil
+local hasOxInventory = false
 
 -- Track reload states to prevent exploitation
 local playerReloadStates = {}
@@ -11,6 +12,8 @@ local CONFIG = {
 
 Citizen.CreateThread(function()
     Wait(1000)
+    hasOxInventory = GetResourceState('ox_inventory') == 'started'
+
     if GetResourceState('qb-core') == 'started' then
         hasFramework = true
         local QBCore = exports['qb-core']:GetCoreObject()
@@ -37,7 +40,7 @@ Citizen.CreateThread(function()
             if state and (currentTime - state.startTime > CONFIG.RELOAD_TIMEOUT) then
                 playerReloadStates[src] = nil
                 reloadCooldowns[src] = nil
-                print(("[SmartTaser] Auto-reset reload state for player %s (timeout)") .. src)
+                print(("[SmartTaser] Auto-reset reload state for player %s (timeout)"):format(src))
             end
         end
     end
@@ -60,9 +63,46 @@ AddEventHandler('smarttaser:reloadComplete', function()
     local src = source
     if playerReloadStates[src] then
         playerReloadStates[src] = nil
-        print(("[SmartTaser] Player %s reload complete") .. src)
+        print(("[SmartTaser] Player %s reload complete"):format(src))
     end
 end)
+
+
+local function consumeCartridge(src)
+    local itemName = Config.CartridgeItem or 'taser_cartridge'
+
+    if hasOxInventory then
+        local count = exports.ox_inventory:Search(src, 'count', itemName) or 0
+        if count < 1 then
+            return false
+        end
+
+        return exports.ox_inventory:RemoveItem(src, itemName, 1)
+    end
+
+    if hasFramework and GetPlayer then
+        local Player = GetPlayer(src)
+        if not Player then
+            return false
+        end
+
+        if Player.Functions then
+            return Player.Functions.RemoveItem(itemName, 1)
+        end
+
+        if Player.removeInventoryItem and Player.getInventoryItem then
+            local item = Player.getInventoryItem(itemName)
+            local count = item and item.count or 0
+            if count > 0 then
+                Player.removeInventoryItem(itemName, 1)
+                return true
+            end
+        end
+    end
+
+    -- No supported inventory framework running. Allow reload to avoid hard-locking the taser.
+    return true
+end
 
 RegisterServerEvent('smarttaser:checkCartridgeItem')
 AddEventHandler('smarttaser:checkCartridgeItem', function(currentCartridges)
@@ -84,13 +124,13 @@ AddEventHandler('smarttaser:checkCartridgeItem', function(currentCartridges)
     
     -- Anti-spam: Check if player is already reloading
     if playerReloadStates[src] and playerReloadStates[src].isReloading then
-        print(("[SmartTaser] Player %s attempted reload while already reloading") .. src)
+        print(("[SmartTaser] Player %s attempted reload while already reloading"):format(src))
         return
     end
     
     -- Anti-spam: Check cooldown between reload requests
     if reloadCooldowns[src] and (currentTime - reloadCooldowns[src] < CONFIG.RELOAD_SERVER_COOLDOWN) then
-        print(("[SmartTaser] Player %s spamming reload requests") .. src)
+        print(("[SmartTaser] Player %s spamming reload requests"):format(src))
         TriggerClientEvent('chat:addMessage', src, {args = {"Taser", "Please wait before reloading again!"}})
         return
     end
@@ -102,36 +142,13 @@ AddEventHandler('smarttaser:checkCartridgeItem', function(currentCartridges)
     }
     reloadCooldowns[src] = currentTime
     
-    -- Check for cartridge item if framework is available
-    local hasCartridge = false
-    if hasFramework and GetPlayer then
-        local Player = GetPlayer(src)
-        if not Player then 
-            playerReloadStates[src] = nil
-            return 
-        end
-        
-        local removed = false
-        if Player.Functions then
-            removed = Player.Functions.RemoveItem('taser_cartridge', 1)
-        elseif Player.removeInventoryItem then
-            local count = Player.getInventoryItem('taser_cartridge').count
-            if count > 0 then
-                Player.removeInventoryItem('taser_cartridge', 1)
-                removed = true
-            end
-        end
-        
-        hasCartridge = removed
-        
-        if not hasCartridge then
-            playerReloadStates[src] = nil
-            TriggerClientEvent('chat:addMessage', src, {args = {"Taser", "You have no taser cartridges!"}})
-            return
-        end
-    else
-        -- No framework: allow reload without item check
-        hasCartridge = true
+    -- Check for cartridge item (native ox_inventory first, then framework fallbacks)
+    local hasCartridge = consumeCartridge(src)
+
+    if not hasCartridge then
+        playerReloadStates[src] = nil
+        TriggerClientEvent('chat:addMessage', src, {args = {"Taser", "You have no taser cartridges!"}})
+        return
     end
     
     -- All checks passed, trigger client reload
