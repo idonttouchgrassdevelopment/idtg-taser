@@ -23,7 +23,11 @@ Config.Timers = {
     preventNegative = true,
 }
 
--- Reload Animation Configuration
+-- ============================================
+-- CUSTOM ANIMATION SYSTEM
+-- ============================================
+
+-- Reload Animation Configuration with Enhanced Customization
 Config.ReloadAnimation = {
     -- Optional preset key from presets table below
     preset = "stungun_operator",
@@ -33,13 +37,20 @@ Config.ReloadAnimation = {
     anim = "reload_aim",
 
     -- TaskPlayAnim controls
-    flags = 48,
-    blendIn = 8.0,
-    blendOut = -8.0,
-    playbackRate = 0.0,
-    lockX = false,
-    lockY = false,
-    lockZ = false,
+    flags = 48,                    -- Animation flags (0-255)
+    blendIn = 8.0,                 -- Blend in time (seconds)
+    blendOut = -8.0,               -- Blend out time (seconds)
+    playbackRate = 0.0,            -- Animation playback rate (0.0 = auto, >0.0 = manual)
+    lockX = false,                 -- Lock X position
+    lockY = false,                 -- Lock Y position
+    lockZ = false,                 -- Lock Z position
+    
+    -- Enhanced animation options
+    enterPlaybackRate = 1.0,       -- Speed when animation starts (0.1-3.0)
+    exitPlaybackRate = 1.0,        -- Speed when animation ends (0.1-3.0)
+    holdTime = 0,                  -- Additional hold time after animation completes (ms)
+    fadeInTime = 0.0,              -- Fade in duration (seconds)
+    fadeOutTime = 0.0,             -- Fade out duration (seconds)
 
     -- Built-in presets (set preset = "name" above)
     presets = {
@@ -49,31 +60,80 @@ Config.ReloadAnimation = {
             flags = 51,
             blendIn = 4.0,
             blendOut = -4.0,
+            -- Enhanced options for this preset
+            enterPlaybackRate = 1.0,
+            exitPlaybackRate = 1.0,
+            holdTime = 200,
         },
         ap_pistol = {
             dict = "anim@weapons@pistol@machine_str",
             anim = "reload_aim",
             flags = 48,
+            blendIn = 8.0,
+            blendOut = -8.0,
         },
         pistol = {
             dict = "weapons@pistol@reload",
             anim = "reload_aim",
             flags = 48,
+            blendIn = 8.0,
+            blendOut = -8.0,
         },
         combat_pistol = {
             dict = "anim@weapons@first_person@aiming@pistol@str",
             anim = "reload",
             flags = 48,
+            blendIn = 8.0,
+            blendOut = -8.0,
         },
         micro_smg = {
             dict = "anim@weapons@smg@micro_str",
             anim = "reload",
             flags = 48,
-        }
+            blendIn = 8.0,
+            blendOut = -8.0,
+        },
+        -- Custom taser-specific animations
+        taser_tactical = {
+            dict = "anim@melee@large_wpn@streamed_core",
+            anim = "ground_attack_on_spot",
+            flags = 49,
+            blendIn = 3.0,
+            blendOut = -3.0,
+            playbackRate = 0.0,
+            enterPlaybackRate = 1.2,
+            exitPlaybackRate = 0.8,
+            holdTime = 150,
+        },
+        taser_quick = {
+            dict = "anim@weapons@pistol@single_str",
+            anim = "reload_aim",
+            flags = 48,
+            blendIn = 2.0,
+            blendOut = -2.0,
+            enterPlaybackRate = 1.5,
+            exitPlaybackRate = 1.5,
+        },
+        taser_realistic = {
+            dict = "anim@weapons@pistol@machine_str",
+            anim = "reload_aim",
+            flags = 51,
+            blendIn = 6.0,
+            blendOut = -6.0,
+            playbackRate = 0.0,
+            enterPlaybackRate = 0.8,
+            exitPlaybackRate = 1.0,
+            holdTime = 500,
+            fadeInTime = 0.1,
+            fadeOutTime = 0.1,
+        },
     }
 }
 
--- Safety System Configuration
+-- ============================================
+-- SAFETY SYSTEM
+-- ============================================
+
 Config.Safety = {
     enabled = true,             -- Enable manual taser safety
     defaultOn = true,           -- Safety starts ON when resource/player loads
@@ -81,6 +141,10 @@ Config.Safety = {
     keybind = 'k',              -- Keyboard key mapping for rebinding in FiveM settings
     toggleDebounce = 250,       -- Prevent rapid toggling (ms)
 }
+
+-- ============================================
+-- UI CONFIGURATION
+-- ============================================
 
 -- Tip: if you want a fully custom animation, set preset to nil and edit dict/anim/flags above.
 

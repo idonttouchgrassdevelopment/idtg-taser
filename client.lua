@@ -13,6 +13,7 @@ local safetyOn = Config.Safety and Config.Safety.defaultOn or false
 local lastSafetyToggle = 0
 local nuiVisible = false
 local usingOxInventory = false
+local reloadCancelled = false
 
 -- ============================================
 -- UTILITY FUNCTIONS
@@ -186,6 +187,118 @@ CreateThread(function()
 end)
 
 -- ============================================
+-- CUSTOM ANIMATION SYSTEM
+-- ============================================
+
+-- Animation state tracking
+local activeAnimDict = nil
+local activeAnimFlags = nil
+
+-- Resolve reload animation with enhanced customization
+local function resolveReloadAnimation()
+    local reloadConfig = Config.ReloadAnimation or {}
+    local selectedPreset = nil
+
+    -- Check for preset first
+    if type(reloadConfig.preset) == 'string' and type(reloadConfig.presets) == 'table' then
+        selectedPreset = reloadConfig.presets[reloadConfig.preset]
+    end
+
+    -- Build animation object with fallback to custom settings
+    local animation = {
+        dict = (selectedPreset and selectedPreset.dict) or reloadConfig.dict,
+        anim = (selectedPreset and selectedPreset.anim) or reloadConfig.anim,
+        flags = (selectedPreset and selectedPreset.flags) or reloadConfig.flags or 48,
+        blendIn = (selectedPreset and selectedPreset.blendIn) or reloadConfig.blendIn or 8.0,
+        blendOut = (selectedPreset and selectedPreset.blendOut) or reloadConfig.blendOut or -8.0,
+        playbackRate = (selectedPreset and selectedPreset.playbackRate) or reloadConfig.playbackRate or 0.0,
+        lockX = (selectedPreset and selectedPreset.lockX) or reloadConfig.lockX or false,
+        lockY = (selectedPreset and selectedPreset.lockY) or reloadConfig.lockY or false,
+        lockZ = (selectedPreset and selectedPreset.lockZ) or reloadConfig.lockZ or false,
+        -- Enhanced animation options
+        enterPlaybackRate = reloadConfig.enterPlaybackRate or 1.0,
+        exitPlaybackRate = reloadConfig.exitPlaybackRate or 1.0,
+        holdTime = reloadConfig.holdTime or 0,
+        fadeInTime = reloadConfig.fadeInTime or 0.0,
+        fadeOutTime = reloadConfig.fadeOutTime or 0.0,
+    }
+
+    if not animation.dict or not animation.anim then
+        return nil
+    end
+
+    return animation
+end
+
+-- Load animation dictionary safely
+local function loadAnimDict(dict, timeout)
+    if not dict then return false end
+    
+    RequestAnimDict(dict)
+    local startTime = GetGameTimer()
+    local loadTimeout = timeout or 1000
+
+    while not HasAnimDictLoaded(dict) do
+        Wait(0)
+        if GetGameTimer() - startTime > loadTimeout then
+            print(("[SmartTaser] Failed to load animation dict: %s"):format(dict))
+            return false
+        end
+    end
+    
+    return true
+end
+
+-- Play reload animation with enhanced control
+local function playReloadAnimation(ped, animation)
+    if not animation or not ped then return false end
+    
+    -- Load animation dictionary
+    if not loadAnimDict(animation.dict, 1000) then
+        return false
+    end
+    
+    activeAnimDict = animation.dict
+    activeAnimFlags = animation.flags
+    
+    -- Calculate duration based on config
+    local duration = Config.ReloadTime
+    
+    -- Play the animation with enhanced options
+    TaskPlayAnim(
+        ped,
+        animation.dict,
+        animation.anim,
+        animation.blendIn,
+        animation.blendOut,
+        duration,
+        animation.flags,
+        animation.playbackRate,
+        animation.lockX,
+        animation.lockY,
+        animation.lockZ
+    )
+    
+    -- Handle fade effects if configured
+    if animation.fadeInTime > 0 then
+        SetAnimSpeed(ped, animation.dict, animation.anim, animation.enterPlaybackRate)
+    end
+    
+    return true
+end
+
+-- Stop reload animation cleanly
+local function stopReloadAnimation(ped)
+    if ped then
+        ClearPedTasks(ped)
+        if activeAnimDict then
+            RemoveAnimDict(activeAnimDict)
+            activeAnimDict = nil
+        end
+    end
+end
+
+-- ============================================
 -- TASER UI RENDERING
 -- ============================================
 
@@ -248,7 +361,11 @@ end
 -- Update UI visibility state
 local function syncTaserAmmoFromWeapon(ped)
     if usingOxInventory and GetSelectedPedWeapon(ped) == Config.TaserWeapon then
-        taserCartridges = math.max(0, GetAmmoInPedWeapon(ped, Config.TaserWeapon))
+        local currentAmmo = GetAmmoInPedWeapon(ped, Config.TaserWeapon)
+        -- Only update if we're not reloading to prevent sync issues
+        if not isReloading then
+            taserCartridges = math.max(0, currentAmmo)
+        end
     end
 end
 
@@ -323,33 +440,6 @@ local function toggleSafetyState()
     lastSafetyToggle = currentTime
 end
 
-local function resolveReloadAnimation()
-    local reloadConfig = Config.ReloadAnimation or {}
-    local selectedPreset = nil
-
-    if type(reloadConfig.preset) == 'string' and type(reloadConfig.presets) == 'table' then
-        selectedPreset = reloadConfig.presets[reloadConfig.preset]
-    end
-
-    local animation = {
-        dict = (selectedPreset and selectedPreset.dict) or reloadConfig.dict,
-        anim = (selectedPreset and selectedPreset.anim) or reloadConfig.anim,
-        flags = (selectedPreset and selectedPreset.flags) or reloadConfig.flags or 48,
-        blendIn = (selectedPreset and selectedPreset.blendIn) or reloadConfig.blendIn or 8.0,
-        blendOut = (selectedPreset and selectedPreset.blendOut) or reloadConfig.blendOut or -8.0,
-        playbackRate = (selectedPreset and selectedPreset.playbackRate) or reloadConfig.playbackRate or 0.0,
-        lockX = (selectedPreset and selectedPreset.lockX) or reloadConfig.lockX or false,
-        lockY = (selectedPreset and selectedPreset.lockY) or reloadConfig.lockY or false,
-        lockZ = (selectedPreset and selectedPreset.lockZ) or reloadConfig.lockZ or false,
-    }
-
-    if not animation.dict or not animation.anim then
-        return nil
-    end
-
-    return animation
-end
-
 RegisterCommand('smarttaser:toggleSafety', function()
     toggleSafetyState()
 end, false)
@@ -387,11 +477,11 @@ CreateThread(function()
             if IsControlJustPressed(0, 24) then
                 if safetyOn then
                     showNotification({
-                        title = "⚡ Safety",
+                        title = "[TASER] Safety",
                         description = "Safety is ON (press [" .. getSafetyBindLabel() .. "])",
                         type = "warning",
                     })
-                elseif taserCartridges > 0 and cooldownRemaining == 0 then
+                elseif taserCartridges > 0 and cooldownRemaining == 0 and not isReloading then
                     -- Fire taser
                     if usingOxInventory then
                         SetTimeout(50, function()
@@ -417,7 +507,7 @@ CreateThread(function()
 
                         if notifConfig.showOn.hit then
                             showNotification({
-                                title = "⚡ Hit!",
+                                title = "[TASER] Hit!",
                                 description = string.format("Target stunned! %s left", taserCartridges),
                                 type = "success",
                             })
@@ -425,7 +515,7 @@ CreateThread(function()
                     else
                         if notifConfig.showOn.miss then
                             showNotification({
-                                title = "⚡ Fired!",
+                                title = "[TASER] Fired!",
                                 description = string.format("%s cart remaining", taserCartridges),
                                 type = "inform",
                             })
@@ -433,14 +523,14 @@ CreateThread(function()
                     end
                 elseif taserCartridges <= 0 then
                     showNotification({
-                        title = "⚡ No Ammo",
+                        title = "[TASER] No Ammo",
                         description = "Press [R] to reload",
                         type = "error",
                     })
                 elseif cooldownRemaining > 0 then
                     if notifConfig.showOn.cooldown then
                         showNotification({
-                            title = "⚡ Cooldown",
+                            title = "[TASER] Cooldown",
                             description = formatTime(cooldownRemaining),
                             type = "warning",
                         })
@@ -453,13 +543,15 @@ CreateThread(function()
                 if not isReloading then
                     if taserCartridges >= Config.MaxCartridges then
                         showNotification({
-                            title = "⚡ Magazine Full",
+                            title = "[TASER] Magazine Full",
                             description = "Taser is already fully loaded",
                             type = "warning",
                         })
                     else
                         if usingOxInventory then
-                            TriggerEvent('smarttaser:reloadTaser')
+                            -- Validate ox_inventory reload with server
+                            local currentAmmo = GetAmmoInPedWeapon(ped, Config.TaserWeapon)
+                            TriggerServerEvent('smarttaser:validateOxReload', currentAmmo)
                         else
                             TriggerServerEvent('smarttaser:checkCartridgeItem', taserCartridges)
                         end
@@ -474,56 +566,40 @@ end)
 -- EVENT HANDLERS
 -- ============================================
 
--- Reload event
-RegisterNetEvent('smarttaser:reloadTaser')
-AddEventHandler('smarttaser:reloadTaser', function()
-    if isReloading then return end
-
+-- Cancel reload event (for anti-exploit)
+RegisterNetEvent('smarttaser:cancelReload')
+AddEventHandler('smarttaser:cancelReload', function()
     local ped = PlayerPedId()
-    if usingOxInventory then
-        syncTaserAmmoFromWeapon(ped)
-        if taserCartridges >= Config.MaxCartridges then
-            return
-        end
+    if isReloading then
+        stopReloadAnimation(ped)
+        isReloading = false
+        reloadCancelled = true
+        print("[SmartTaser] Reload cancelled by server")
     end
+end)
 
+-- Start reload event (server-validated)
+RegisterNetEvent('smarttaser:startReload')
+AddEventHandler('smarttaser:startReload', function()
+    if isReloading then return end
+    
+    local ped = PlayerPedId()
+    
+    -- Check weapon one more time to prevent exploit
+    if GetSelectedPedWeapon(ped) ~= Config.TaserWeapon then
+        return
+    end
+    
     isReloading = true
+    reloadCancelled = false
     reloadStartTime = GetGameTimer()
     showUI = true
 
     local reloadAnimation = resolveReloadAnimation()
 
-    -- Load animation dictionary
-    if reloadAnimation then
-        RequestAnimDict(reloadAnimation.dict)
-    end
-
-    local timeout = 1000
-    local startTime = GetGameTimer()
-
-    while reloadAnimation and not HasAnimDictLoaded(reloadAnimation.dict) do
-        Wait(0)
-        if GetGameTimer() - startTime > timeout then
-            print("Failed to load animation dict: " .. reloadAnimation.dict)
-            break
-        end
-    end
-
     -- Play reload animation
-    if reloadAnimation and HasAnimDictLoaded(reloadAnimation.dict) then
-        TaskPlayAnim(
-            ped,
-            reloadAnimation.dict,
-            reloadAnimation.anim,
-            reloadAnimation.blendIn,
-            reloadAnimation.blendOut,
-            Config.ReloadTime,
-            reloadAnimation.flags,
-            reloadAnimation.playbackRate,
-            reloadAnimation.lockX,
-            reloadAnimation.lockY,
-            reloadAnimation.lockZ
-        )
+    if reloadAnimation and playReloadAnimation(ped, reloadAnimation) then
+        -- Animation started successfully
     end
 
     -- Play reload sound
@@ -532,7 +608,15 @@ AddEventHandler('smarttaser:reloadTaser', function()
 
     -- Wait for reload to complete
     Wait(Config.ReloadTime)
-    ClearPedTasks(ped)
+    
+    -- Check if reload was cancelled
+    if reloadCancelled then
+        stopReloadAnimation(ped)
+        isReloading = false
+        return
+    end
+    
+    stopReloadAnimation(ped)
 
     -- Reload complete
     if usingOxInventory then
@@ -546,11 +630,18 @@ AddEventHandler('smarttaser:reloadTaser', function()
 
     if Config.UI.notifications.showOn.reload then
         showNotification({
-            title = "⚡ Reloaded",
+            title = "[TASER] Reloaded",
             description = string.format("Ready to fire! %d cartridges", taserCartridges),
             type = "success",
         })
     end
+end)
+
+-- Legacy reload event (deprecated - use startReload instead)
+RegisterNetEvent('smarttaser:reloadTaser')
+AddEventHandler('smarttaser:reloadTaser', function()
+    print("[SmartTaser] Warning: Using deprecated reloadTaser event. Please use startReload instead.")
+    TriggerEvent('smarttaser:startReload')
 end)
 
 -- Stun effect event
@@ -579,13 +670,16 @@ end)
 
 -- Test cooldown timer
 RegisterCommand('testtaser', function()
-    TriggerEvent('chat:addMessage', {args = {"TASER", "Testing cooldown timer..."}})
+    TriggerEvent('chat:addMessage', {args = {
+        "TASER", "Testing cooldown timer..."}})
 
     local testStart = GetGameTimer()
     cooldownEndTime = testStart + Config.TaserCooldown
 
-    TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Cooldown set for %dms", Config.TaserCooldown)}})
-    TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Start: %d, End: %d", testStart, cooldownEndTime)}})
+    TriggerEvent('chat:addMessage', {args = {
+        "TASER", string.format("Cooldown set for %dms", Config.TaserCooldown)}})
+    TriggerEvent('chat:addMessage', {args = {
+        "TASER", string.format("Start: %d, End: %d", testStart, cooldownEndTime)}})
 
     -- Monitor timer progress
     local checkThread = CreateThread(function()
@@ -593,21 +687,29 @@ RegisterCommand('testtaser', function()
             Wait(1000)
             local now = GetGameTimer()
             local remaining = math.max(0, cooldownEndTime - now)
-            TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Remaining: %s", formatTime(remaining))}})
+            TriggerEvent('chat:addMessage', {args = {
+                "TASER", string.format("Remaining: %s", formatTime(remaining))}})
             if remaining <= 0 then break end
         end
-        TriggerEvent('chat:addMessage', {args = {"TASER", "✓ Cooldown complete!"}})
+        TriggerEvent('chat:addMessage', {args = {
+            "TASER", "[OK] Cooldown complete!"}})
     end)
 end)
 
 -- Show current config
 RegisterCommand('taserconfig', function()
-    TriggerEvent('chat:addMessage', {args = {"TASER", "=== CONFIG ==="}})
-    TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Cooldown: %dms", Config.TaserCooldown)}})
-    TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Timer Precision: %d decimals", Config.Timers.cooldownPrecision)}})
-    TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Max Cartridges: %d", Config.MaxCartridges)}})
-    TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Stun Duration: %dms", Config.StunDuration)}})
-    TriggerEvent('chat:addMessage', {args = {"TASER", string.format("Layout: %s", Config.UI.layout)}})
+    TriggerEvent('chat:addMessage', {args = {
+        "TASER", "=== CONFIG ==="}})
+    TriggerEvent('chat:addMessage', {args = {
+        "TASER", string.format("Cooldown: %dms", Config.TaserCooldown)}})
+    TriggerEvent('chat:addMessage', {args = {
+        "TASER", string.format("Timer Precision: %d decimals", Config.Timers.cooldownPrecision)}})
+    TriggerEvent('chat:addMessage', {args = {
+        "TASER", string.format("Max Cartridges: %d", Config.MaxCartridges)}})
+    TriggerEvent('chat:addMessage', {args = {
+        "TASER", string.format("Stun Duration: %dms", Config.StunDuration)}})
+    TriggerEvent('chat:addMessage', {args = {
+        "TASER", string.format("Layout: %s", Config.UI.layout)}})
 end)
 
 

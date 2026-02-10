@@ -7,7 +7,7 @@ local playerReloadStates = {}
 local reloadCooldowns = {}
 local CONFIG = {
     RELOAD_SERVER_COOLDOWN = 2500, -- Minimum time between reload requests (anti-spam)
-    RELOAD_TIMEOUT = 5000, -- Maximum time a reload can take before auto-reset
+    RELOAD_TIMEOUT = 10000, -- Maximum time a reload can take before auto-reset
 }
 
 Citizen.CreateThread(function()
@@ -120,7 +120,8 @@ AddEventHandler('smarttaser:checkCartridgeItem', function(currentCartridges)
 
     -- Prevent wasting reloads when taser is already full
     if ammoCount >= Config.MaxCartridges then
-        TriggerClientEvent('chat:addMessage', src, {args = {"Taser", "Taser is already fully loaded!"}})
+        TriggerClientEvent('chat:addMessage', src, {args = {
+            "Taser", "Taser is already fully loaded!"}})
         return
     end
     
@@ -133,7 +134,8 @@ AddEventHandler('smarttaser:checkCartridgeItem', function(currentCartridges)
     -- Anti-spam: Check cooldown between reload requests
     if reloadCooldowns[src] and (currentTime - reloadCooldowns[src] < CONFIG.RELOAD_SERVER_COOLDOWN) then
         print(("[SmartTaser] Player %s spamming reload requests"):format(src))
-        TriggerClientEvent('chat:addMessage', src, {args = {"Taser", "Please wait before reloading again!"}})
+        TriggerClientEvent('chat:addMessage', src, {args = {
+            "Taser", "Please wait before reloading again!"}})
         return
     end
     
@@ -149,13 +151,14 @@ AddEventHandler('smarttaser:checkCartridgeItem', function(currentCartridges)
 
     if not hasCartridge then
         playerReloadStates[src] = nil
-        TriggerClientEvent('chat:addMessage', src, {args = {"Taser", "You have no taser cartridges!"}})
+        TriggerClientEvent('chat:addMessage', src, {args = {
+            "Taser", "You have no taser cartridges!"}})
         return
     end
     
     -- All checks passed, trigger client reload
     if hasCartridge then
-        TriggerClientEvent('smarttaser:reloadTaser', src)
+        TriggerClientEvent('smarttaser:startReload', src)
         
         -- Schedule reload state reset after expected reload time
         SetTimeout(Config.ReloadTime + 500, function()
@@ -164,4 +167,55 @@ AddEventHandler('smarttaser:checkCartridgeItem', function(currentCartridges)
             end
         end)
     end
+end)
+
+-- ox_inventory reload validation
+RegisterServerEvent('smarttaser:validateOxReload')
+AddEventHandler('smarttaser:validateOxReload', function(currentAmmo)
+    local src = source
+    local currentTime = GetGameTimer()
+    local ammoCount = tonumber(currentAmmo) or 0
+    
+    -- Validate source
+    if not src or src <= 0 then
+        print("[SmartTaser] Invalid source in validateOxReload")
+        return
+    end
+    
+    -- Only validate if ox_inventory is running
+    if not hasOxInventory then
+        return
+    end
+    
+    -- Anti-spam: Check if player is already reloading
+    if playerReloadStates[src] and playerReloadStates[src].isReloading then
+        print(("[SmartTaser] Player %s attempted ox_inventory reload while already reloading"):format(src))
+        TriggerClientEvent('smarttaser:cancelReload', src)
+        return
+    end
+    
+    -- Anti-spam: Check cooldown between reload requests
+    if reloadCooldowns[src] and (currentTime - reloadCooldowns[src] < CONFIG.RELOAD_SERVER_COOLDOWN) then
+        print(("[SmartTaser] Player %s spamming ox_inventory reload requests"):format(src))
+        TriggerClientEvent('smarttaser:cancelReload', src)
+        return
+    end
+    
+    -- Set reload state
+    playerReloadStates[src] = {
+        isReloading = true,
+        startTime = currentTime,
+        isOxReload = true
+    }
+    reloadCooldowns[src] = currentTime
+    
+    -- Allow the reload to proceed (ox_inventory handles ammo)
+    TriggerClientEvent('smarttaser:startReload', src)
+    
+    -- Schedule reload state reset
+    SetTimeout(Config.ReloadTime + 500, function()
+        if playerReloadStates[src] then
+            playerReloadStates[src] = nil
+        end
+    end)
 end)
