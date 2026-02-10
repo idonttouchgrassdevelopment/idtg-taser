@@ -25,9 +25,45 @@ Config.Timers = {
 
 -- Reload Animation Configuration
 Config.ReloadAnimation = {
+    -- Optional preset key from presets table below
+    preset = "ap_pistol",
+
+    -- Fallback custom animation (used when preset is missing)
     dict = "anim@weapons@pistol@machine_str",
     anim = "reload_aim",
-    flags = 48
+
+    -- TaskPlayAnim controls
+    flags = 48,
+    blendIn = 8.0,
+    blendOut = -8.0,
+    playbackRate = 0.0,
+    lockX = false,
+    lockY = false,
+    lockZ = false,
+
+    -- Built-in presets (set preset = "name" above)
+    presets = {
+        ap_pistol = {
+            dict = "anim@weapons@pistol@machine_str",
+            anim = "reload_aim",
+            flags = 48,
+        },
+        pistol = {
+            dict = "weapons@pistol@reload",
+            anim = "reload_aim",
+            flags = 48,
+        },
+        combat_pistol = {
+            dict = "anim@weapons@first_person@aiming@pistol@str",
+            anim = "reload",
+            flags = 48,
+        },
+        micro_smg = {
+            dict = "anim@weapons@smg@micro_str",
+            anim = "reload",
+            flags = 48,
+        }
+    }
 }
 
 -- Safety System Configuration
@@ -39,11 +75,7 @@ Config.Safety = {
     toggleDebounce = 250,       -- Prevent rapid toggling (ms)
 }
 
--- Alternative animation presets you can use:
--- AP Pistol: dict = "anim@weapons@pistol@machine_str", anim = "reload_aim"
--- Pistol: dict = "weapons@pistol@reload", anim = "reload_aim"
--- Combat Pistol: dict = "anim@weapons@first_person@aiming@pistol@str", anim = "reload"
--- Micro SMG: dict = "anim@weapons@smg@micro_str", anim = "reload"
+-- Tip: if you want a fully custom animation, set preset to nil and edit dict/anim/flags above.
 
 -- UI Configuration (Enhanced with Modern Visual Effects)
 Config.UI = {

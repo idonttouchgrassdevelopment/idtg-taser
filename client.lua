@@ -314,6 +314,33 @@ local function toggleSafetyState()
     lastSafetyToggle = currentTime
 end
 
+local function resolveReloadAnimation()
+    local reloadConfig = Config.ReloadAnimation or {}
+    local selectedPreset = nil
+
+    if type(reloadConfig.preset) == 'string' and type(reloadConfig.presets) == 'table' then
+        selectedPreset = reloadConfig.presets[reloadConfig.preset]
+    end
+
+    local animation = {
+        dict = (selectedPreset and selectedPreset.dict) or reloadConfig.dict,
+        anim = (selectedPreset and selectedPreset.anim) or reloadConfig.anim,
+        flags = (selectedPreset and selectedPreset.flags) or reloadConfig.flags or 48,
+        blendIn = (selectedPreset and selectedPreset.blendIn) or reloadConfig.blendIn or 8.0,
+        blendOut = (selectedPreset and selectedPreset.blendOut) or reloadConfig.blendOut or -8.0,
+        playbackRate = (selectedPreset and selectedPreset.playbackRate) or reloadConfig.playbackRate or 0.0,
+        lockX = (selectedPreset and selectedPreset.lockX) or reloadConfig.lockX or false,
+        lockY = (selectedPreset and selectedPreset.lockY) or reloadConfig.lockY or false,
+        lockZ = (selectedPreset and selectedPreset.lockZ) or reloadConfig.lockZ or false,
+    }
+
+    if not animation.dict or not animation.anim then
+        return nil
+    end
+
+    return animation
+end
+
 RegisterCommand('smarttaser:toggleSafety', function()
     toggleSafetyState()
 end, false)
@@ -437,35 +464,38 @@ AddEventHandler('smarttaser:reloadTaser', function()
     reloadStartTime = GetGameTimer()
     showUI = true
 
+    local reloadAnimation = resolveReloadAnimation()
+
     -- Load animation dictionary
-    RequestAnimDict(Config.ReloadAnimation.dict)
+    if reloadAnimation then
+        RequestAnimDict(reloadAnimation.dict)
+    end
+
     local timeout = 1000
     local startTime = GetGameTimer()
 
-    while not HasAnimDictLoaded(Config.ReloadAnimation.dict) do
+    while reloadAnimation and not HasAnimDictLoaded(reloadAnimation.dict) do
         Wait(0)
         if GetGameTimer() - startTime > timeout then
-            print("Failed to load animation dict: " .. Config.ReloadAnimation.dict)
-            isReloading = false
-            TriggerServerEvent('smarttaser:reloadComplete')
-            return
+            print("Failed to load animation dict: " .. reloadAnimation.dict)
+            break
         end
     end
 
     -- Play reload animation
-    if HasAnimDictLoaded(Config.ReloadAnimation.dict) then
+    if reloadAnimation and HasAnimDictLoaded(reloadAnimation.dict) then
         TaskPlayAnim(
             ped,
-            Config.ReloadAnimation.dict,
-            Config.ReloadAnimation.anim,
-            8.0,
-            -8.0,
+            reloadAnimation.dict,
+            reloadAnimation.anim,
+            reloadAnimation.blendIn,
+            reloadAnimation.blendOut,
             Config.ReloadTime,
-            Config.ReloadAnimation.flags,
-            0,
-            false,
-            false,
-            false
+            reloadAnimation.flags,
+            reloadAnimation.playbackRate,
+            reloadAnimation.lockX,
+            reloadAnimation.lockY,
+            reloadAnimation.lockZ
         )
     end
 
