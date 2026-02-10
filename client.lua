@@ -408,7 +408,15 @@ CreateThread(function()
             -- Reload control
             if IsControlJustReleased(0, Config.ReloadKey) then
                 if not isReloading then
-                    TriggerServerEvent('smarttaser:checkCartridgeItem')
+                    if taserCartridges >= Config.MaxCartridges then
+                        showNotification({
+                            title = "⚡ Magazine Full",
+                            description = "Taser is already fully loaded",
+                            type = "warning",
+                        })
+                    else
+                        TriggerServerEvent('smarttaser:checkCartridgeItem', taserCartridges)
+                    end
                 end
             end
         end
