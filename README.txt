@@ -60,3 +60,4 @@ In `config.lua`, you can set:
 - Requires `ox_lib` and `ox_inventory`.
 - Taser UI appears only when aiming (if enabled in config).
 - Animations and sounds included (you can swap them if you want).
+- When `ox_inventory` is running, reload uses native ammo handling and the script only layers the custom reload animation/UI timing on top.
