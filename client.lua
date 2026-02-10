@@ -342,6 +342,10 @@ CreateThread(function()
             local currentTime = GetGameTimer()
             local cooldownRemaining = math.max(0, cooldownEndTime - currentTime)
 
+            -- Block native/ox reload handling so only Smart Taser logic can run.
+            -- We still listen for the disabled control to trigger custom reload behavior.
+            DisableControlAction(0, Config.ReloadKey, true)
+
             -- Disable firing if out of cartridges, on cooldown, reloading, or safety enabled
             if taserCartridges <= 0 or cooldownRemaining > 0 or isReloading or safetyOn then
                 DisablePlayerFiring(ped, true)
@@ -406,12 +410,18 @@ CreateThread(function()
             end
 
             -- Reload control
-            if IsControlJustReleased(0, Config.ReloadKey) then
+            if IsDisabledControlJustReleased(0, Config.ReloadKey) then
                 if not isReloading then
                     if taserCartridges >= Config.MaxCartridges then
                         showNotification({
                             title = "⚡ Magazine Full",
                             description = "Taser is already fully loaded",
+                            type = "warning",
+                        })
+                    elseif taserCartridges > 0 then
+                        showNotification({
+                            title = "⚡ Reload Blocked",
+                            description = "Use all cartridges before reloading",
                             type = "warning",
                         })
                     else
