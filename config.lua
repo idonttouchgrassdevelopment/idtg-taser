@@ -26,7 +26,7 @@ Config.Timers = {
 -- Reload Animation Configuration
 Config.ReloadAnimation = {
     -- Optional preset key from presets table below
-    preset = "ap_pistol",
+    preset = "stungun_operator",
 
     -- Fallback custom animation (used when preset is missing)
     dict = "anim@weapons@pistol@machine_str",
@@ -43,6 +43,13 @@ Config.ReloadAnimation = {
 
     -- Built-in presets (set preset = "name" above)
     presets = {
+        stungun_operator = {
+            dict = "anim@weapons@pistol@machine_str",
+            anim = "reload_aim",
+            flags = 51,
+            blendIn = 4.0,
+            blendOut = -4.0,
+        },
         ap_pistol = {
             dict = "anim@weapons@pistol@machine_str",
             anim = "reload_aim",

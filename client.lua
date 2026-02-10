@@ -12,6 +12,7 @@ local reloadProgress = 0
 local safetyOn = Config.Safety and Config.Safety.defaultOn or false
 local lastSafetyToggle = 0
 local nuiVisible = false
+local usingOxInventory = false
 
 -- ============================================
 -- UTILITY FUNCTIONS
@@ -245,12 +246,20 @@ end
 -- ============================================
 
 -- Update UI visibility state
+local function syncTaserAmmoFromWeapon(ped)
+    if usingOxInventory and GetSelectedPedWeapon(ped) == Config.TaserWeapon then
+        taserCartridges = math.max(0, GetAmmoInPedWeapon(ped, Config.TaserWeapon))
+    end
+end
+
 local function updateUI()
     local ped = PlayerPedId()
     if GetSelectedPedWeapon(ped) ~= Config.TaserWeapon then
         showUI = false
         return
     end
+
+    syncTaserAmmoFromWeapon(ped)
 
     if Config.UI.taser.hideWhenNotAiming then
         if not IsPlayerFreeAiming(PlayerId()) then
@@ -384,7 +393,14 @@ CreateThread(function()
                     })
                 elseif taserCartridges > 0 and cooldownRemaining == 0 then
                     -- Fire taser
-                    taserCartridges = taserCartridges - 1
+                    if usingOxInventory then
+                        SetTimeout(50, function()
+                            syncTaserAmmoFromWeapon(PlayerPedId())
+                        end)
+                    else
+                        taserCartridges = taserCartridges - 1
+                    end
+
                     lastTase = currentTime
                     cooldownEndTime = currentTime + Config.TaserCooldown
 
@@ -442,7 +458,11 @@ CreateThread(function()
                             type = "warning",
                         })
                     else
-                        TriggerServerEvent('smarttaser:checkCartridgeItem', taserCartridges)
+                        if usingOxInventory then
+                            TriggerEvent('smarttaser:reloadTaser')
+                        else
+                            TriggerServerEvent('smarttaser:checkCartridgeItem', taserCartridges)
+                        end
                     end
                 end
             end
@@ -460,6 +480,13 @@ AddEventHandler('smarttaser:reloadTaser', function()
     if isReloading then return end
 
     local ped = PlayerPedId()
+    if usingOxInventory then
+        syncTaserAmmoFromWeapon(ped)
+        if taserCartridges >= Config.MaxCartridges then
+            return
+        end
+    end
+
     isReloading = true
     reloadStartTime = GetGameTimer()
     showUI = true
@@ -508,10 +535,14 @@ AddEventHandler('smarttaser:reloadTaser', function()
     ClearPedTasks(ped)
 
     -- Reload complete
-    taserCartridges = Config.MaxCartridges
-    isReloading = false
+    if usingOxInventory then
+        syncTaserAmmoFromWeapon(ped)
+    else
+        taserCartridges = Config.MaxCartridges
+        TriggerServerEvent('smarttaser:reloadComplete')
+    end
 
-    TriggerServerEvent('smarttaser:reloadComplete')
+    isReloading = false
 
     if Config.UI.notifications.showOn.reload then
         showNotification({
@@ -537,6 +568,7 @@ end)
 -- Initialize cartridges on resource start
 CreateThread(function()
     Wait(1000)
+    usingOxInventory = GetResourceState('ox_inventory') == 'started'
     taserCartridges = Config.MaxCartridges
     safetyOn = Config.Safety and Config.Safety.defaultOn or false
 end)
