@@ -65,13 +65,20 @@ AddEventHandler('smarttaser:reloadComplete', function()
 end)
 
 RegisterServerEvent('smarttaser:checkCartridgeItem')
-AddEventHandler('smarttaser:checkCartridgeItem', function()
+AddEventHandler('smarttaser:checkCartridgeItem', function(currentCartridges)
     local src = source
     local currentTime = GetGameTimer()
+    local ammoCount = tonumber(currentCartridges) or 0
     
     -- Validate source
     if not src or src <= 0 then
         print("[SmartTaser] Invalid source in checkCartridgeItem")
+        return
+    end
+
+    -- Prevent wasting reloads when taser is already full
+    if ammoCount >= Config.MaxCartridges then
+        TriggerClientEvent('chat:addMessage', src, {args = {"Taser", "Taser is already fully loaded!"}})
         return
     end
     
