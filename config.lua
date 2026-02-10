@@ -38,6 +38,14 @@ Config.Safety = {
     toggleDebounce = 250,       -- Prevent rapid toggling (ms)
 }
 
+-- Safety Toggle Animation Configuration
+Config.SafetyAnimation = {
+    dict = "anim@weapons@pistol@machine_str",
+    anim = "reload_aim",
+    duration = 1000,            -- Animation duration (ms)
+    flags = 48                  -- Animation flags
+}
+
 -- Alternative animation presets you can use:
 -- AP Pistol: dict = "anim@weapons@pistol@machine_str", anim = "reload_aim"
 -- Pistol: dict = "weapons@pistol@reload", anim = "reload_aim"

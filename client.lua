@@ -310,6 +310,41 @@ local function toggleSafetyState()
     local currentTime = GetGameTimer()
     if currentTime - lastSafetyToggle < (Config.Safety.toggleDebounce or 250) then return end
 
+    -- Play safety toggle animation
+    if Config.SafetyAnimation then
+        RequestAnimDict(Config.SafetyAnimation.dict)
+        local timeout = 1000
+        local startTime = GetGameTimer()
+        
+        while not HasAnimDictLoaded(Config.SafetyAnimation.dict) do
+            Wait(0)
+            if GetGameTimer() - startTime > timeout then
+                print("Failed to load safety animation dict: " .. Config.SafetyAnimation.dict)
+                break
+            end
+        end
+        
+        if HasAnimDictLoaded(Config.SafetyAnimation.dict) then
+            TaskPlayAnim(
+                ped,
+                Config.SafetyAnimation.dict,
+                Config.SafetyAnimation.anim,
+                8.0,
+                -8.0,
+                Config.SafetyAnimation.duration or 1000,
+                Config.SafetyAnimation.flags or 48,
+                0,
+                false,
+                false,
+                false
+            )
+            
+            -- Play safety toggle sound
+            local coords = GetEntityCoords(ped)
+            PlaySoundFromCoord(-1, "WEAPON_RELOAD", coords, "HUD_MINI_GAME_SOUNDSET", false, 0, false)
+        end
+    end
+
     safetyOn = not safetyOn
     lastSafetyToggle = currentTime
 end
@@ -412,10 +447,10 @@ CreateThread(function()
             -- Reload control
             if IsDisabledControlJustReleased(0, Config.ReloadKey) then
                 if not isReloading then
-                    if taserCartridges >= Config.MaxCartridges then
+                    if taserCartridges > 0 then
                         showNotification({
-                            title = "⚡ Magazine Full",
-                            description = "Taser is already fully loaded",
+                            title = "⚡ Cannot Reload",
+                            description = "Taser still has charges. Use them first!",
                             type = "warning",
                         })
                     else
